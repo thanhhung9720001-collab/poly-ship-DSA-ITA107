@@ -104,7 +104,7 @@ class PolyShipApp:
         }
 
         # Nút 1: Nhập dữ liệu
-        self.btn_input = tk.Button(card_frame, text="1. Nhập dữ liệu", **self.btn_style, command=self.input_data)
+        self.btn_input = tk.Button(card_frame, text="📥 1. Nhập dữ liệu", **self.btn_style, command=self.input_data)
         self.btn_input.pack(pady=(4, 0))
 
         # Phụ: Nạp nhanh dữ liệu mẫu dạng link
@@ -116,30 +116,23 @@ class PolyShipApp:
         self.lbl_demo_link.bind("<Leave>", lambda e: self.lbl_demo_link.config(fg="#f27024") if self.btn_input.cget("state") == "normal" else None)
 
         # Nút 2: Xử lý
-        self.btn_process = tk.Button(card_frame, text="2. Xử lý (Routing & Hashing)", **self.btn_style, command=self.process_data)
+        self.btn_process = tk.Button(card_frame, text="⚙️ 2. Xử lý (Routing & Hashing)", **self.btn_style, command=self.process_data)
         self.btn_process.pack(pady=4)
 
         # Nút 3: Tối ưu
-        self.btn_optimize = tk.Button(card_frame, text="3. Tối ưu (MST & Knapsack)", **self.btn_style, command=self.optimize_data)
+        self.btn_optimize = tk.Button(card_frame, text="⚡ 3. Tối ưu (MST & Knapsack)", **self.btn_style, command=self.optimize_data)
         self.btn_optimize.pack(pady=4)
 
         # Nút 4: Thông tin sinh viên
-        self.btn_info = tk.Button(card_frame, text="4. Thông tin & Hướng dẫn", **self.btn_style, command=self.show_info)
+        self.btn_info = tk.Button(card_frame, text="ℹ️ 4. Thông tin & Hướng dẫn", **self.btn_style, command=self.show_info)
         self.btn_info.pack(pady=4)
 
         # Nút 5: Thoát
         exit_style = self.btn_style.copy()
         exit_style["bg"] = "#0f172a"
         exit_style["activebackground"] = "#1e293b"
-        self.btn_exit = tk.Button(card_frame, text="5. Thoát chương trình", **exit_style, command=self.exit_program)
+        self.btn_exit = tk.Button(card_frame, text="🚪 5. Thoát chương trình", **exit_style, command=self.exit_program)
         self.btn_exit.pack(pady=4)
-
-        # Thiết lập hiệu ứng Hover
-        self.setup_hover(self.btn_input, "#f27024", "#d95f1c")
-        self.setup_hover(self.btn_process, "#f27024", "#d95f1c")
-        self.setup_hover(self.btn_optimize, "#f27024", "#d95f1c")
-        self.setup_hover(self.btn_info, "#f27024", "#d95f1c")
-        self.setup_hover(self.btn_exit, "#0f172a", "#1e293b")
 
         # --- 3. KHUNG THANH TIẾN TRÌNH MÔ PHỎNG ---
         self.progress_frame = tk.Frame(main_content, bg="#f8fafc")
@@ -173,7 +166,6 @@ class PolyShipApp:
                                     font=("Segoe UI", 8, "bold"), cursor="hand2", relief="flat", bd=0,
                                     padx=8, pady=2, command=self.export_log)
         self.btn_export.pack(side="right")
-        self.setup_hover(self.btn_export, "#475569", "#334155")
 
         log_border = tk.Frame(log_section, bg="#e2e8f0", highlightthickness=1, highlightbackground="#cbd5e1")
         log_border.pack(fill="both", expand=True)
@@ -198,12 +190,41 @@ class PolyShipApp:
                           font=("Segoe UI", 8), fg="#94a3b8", bg="#f8fafc")
         footer.pack(side="bottom", pady=6)
 
+        # Lưu trữ nội dung text gốc của các nút bấm để hover & reset trạng thái sạch sẽ
+        self.btn_texts = {
+            self.btn_input: "📥 1. Nhập dữ liệu",
+            self.btn_process: "⚙️ 2. Xử lý (Routing & Hashing)",
+            self.btn_optimize: "⚡ 3. Tối ưu (MST & Knapsack)",
+            self.btn_info: "ℹ️ 4. Thông tin & Hướng dẫn",
+            self.btn_exit: "🚪 5. Thoát chương trình",
+            self.btn_export: "📤 Xuất Nhật Ký"
+        }
+
+        # Thiết lập hiệu ứng Hover cho toàn bộ nút bấm
+        self.setup_hover(self.btn_input, "#f27024", "#d95f1c")
+        self.setup_hover(self.btn_process, "#f27024", "#d95f1c")
+        self.setup_hover(self.btn_optimize, "#f27024", "#d95f1c")
+        self.setup_hover(self.btn_info, "#f27024", "#d95f1c")
+        self.setup_hover(self.btn_exit, "#0f172a", "#1e293b")
+        self.setup_hover(self.btn_export, "#475569", "#334155")
+
         # Ghi log khởi động hệ thống
         self.log_message("Khởi chạy hệ thống POLY-SHIP thành công.", "info")
 
     def setup_hover(self, button, normal_color, hover_color):
-        button.bind("<Enter>", lambda e: button.config(bg=hover_color) if button.cget("state") == "normal" else None)
-        button.bind("<Leave>", lambda e: button.config(bg=normal_color) if button.cget("state") == "normal" else None)
+        """Thiết lập hiệu ứng hover đổi màu nền và dịch chuyển văn bản biểu tượng ➔"""
+        original_text = self.btn_texts[button]
+        
+        def on_enter(e):
+            if button.cget("state") == "normal":
+                button.config(bg=hover_color, text=f"{original_text}  ➔")
+                
+        def on_leave(e):
+            if button.cget("state") == "normal":
+                button.config(bg=normal_color, text=original_text)
+                
+        button.bind("<Enter>", on_enter)
+        button.bind("<Leave>", on_leave)
 
     def log_message(self, message, level="info"):
         """Ghi tin nhắn nhật ký kèm theo dấu thời gian thực tế và màu sắc phân cấp"""
@@ -214,12 +235,10 @@ class PolyShipApp:
         self.txt_log.config(state="disabled")
 
     def set_buttons_state(self, state):
-        """Khóa hoặc mở khóa các nút bấm chính"""
-        self.btn_input.config(state=state)
-        self.btn_process.config(state=state)
-        self.btn_optimize.config(state=state)
-        self.btn_info.config(state=state)
-        self.btn_exit.config(state=state)
+        """Khóa hoặc mở khóa các nút bấm chính và reset text nguyên bản sạch sẽ"""
+        for btn, text in self.btn_texts.items():
+            if btn != self.btn_export:  # Nút xuất log luôn giữ nguyên trạng thái
+                btn.config(state=state, text=text)
         if state == "disabled":
             self.lbl_demo_link.config(fg="#cbd5e1", cursor="arrow")
         else:
