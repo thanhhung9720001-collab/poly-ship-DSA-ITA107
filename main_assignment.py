@@ -20,7 +20,7 @@ class PolyShipApp:
     def __init__(self, root):
         self.root = root
         self.root.title("POLY-SHIP Hậu Cần - FPT Polytechnic")
-        self.root.geometry("500x620")
+        self.root.geometry("520x760")
         self.root.configure(bg="#f8fafc")
         self.root.resizable(False, False)
         
@@ -32,19 +32,19 @@ class PolyShipApp:
                 # 1. Thử dùng Pillow (để resize chất lượng cao)
                 from PIL import Image, ImageTk
                 img = Image.open(logo_path)
-                w_target = 180
+                w_target = 205
                 h_target = int(w_target * img.height / img.width)
                 img = img.resize((w_target, h_target), Image.Resampling.LANCZOS)
                 self.logo_img = ImageTk.PhotoImage(img)
             except Exception:
                 try:
                     # 2. Dự phòng: Dùng PhotoImage nguyên bản của Tkinter (nếu không có Pillow)
-                    self.logo_img = tk.PhotoImage(file=logo_path).subsample(4)
+                    self.logo_img = tk.PhotoImage(file=logo_path).subsample(5)
                 except Exception:
                     self.logo_img = None
 
         # --- 1. HEADER BANNER ---
-        header_frame = tk.Frame(root, bg="#ffffff", height=85)
+        header_frame = tk.Frame(root, bg="#ffffff", height=95)
         header_frame.pack(fill="x")
         header_frame.pack_propagate(False)
 
@@ -54,24 +54,24 @@ class PolyShipApp:
 
         if self.logo_img:
             lbl_logo_img = tk.Label(header_frame, image=self.logo_img, bg="#ffffff")
-            lbl_logo_img.pack(side="left", padx=20, pady=10)
+            lbl_logo_img.pack(side="left", padx=(15, 10), pady=10)
             
             # Khung thông tin tiêu đề và trạng thái bên phải
             right_header = tk.Frame(header_frame, bg="#ffffff")
-            right_header.pack(side="right", padx=20, pady=10)
+            right_header.pack(side="right", padx=(10, 15), pady=10)
             
             lbl_title = tk.Label(right_header, text="HỆ THỐNG HẬU CẦN\nPOLY-SHIP", fg="#f27024", bg="#ffffff", 
-                                 font=("Segoe UI", 12, "bold"), justify="left")
+                                 font=("Segoe UI", 12, "bold"), justify="right")
             lbl_title.pack(anchor="e")
             
             lbl_status = tk.Label(right_header, text="● Máy chủ: Online | DB: Connected", fg="#10b981", bg="#ffffff", 
                                   font=("Segoe UI", 9, "bold"))
-            lbl_status.pack(anchor="e", pady=(2, 0))
+            lbl_status.pack(anchor="e", pady=(4, 0))
         else:
             # Fallback nếu không có file logo
             lbl_logo = tk.Label(header_frame, text="FPT POLYTECHNIC", fg="#f27024", bg="#ffffff", 
                                 font=("Segoe UI", 12, "italic bold"))
-            lbl_logo.pack(anchor="w", padx=25, pady=(12, 0))
+            lbl_logo.pack(anchor="w", padx=25, pady=(15, 0))
             
             lbl_title = tk.Label(header_frame, text="HỆ THỐNG HẬU CẦN POLY-SHIP", fg="#0f172a", bg="#ffffff", 
                                  font=("Segoe UI", 14, "bold"))
@@ -79,14 +79,14 @@ class PolyShipApp:
 
             lbl_status = tk.Label(header_frame, text="● Máy chủ: Online | Database: Connected", fg="#10b981", bg="#ffffff", 
                                   font=("Segoe UI", 9, "bold"))
-            lbl_status.pack(anchor="w", padx=25, pady=(0, 10))
+            lbl_status.pack(anchor="w", padx=25, pady=(0, 15))
 
         # --- 2. CARD CONTAINER CHỨA NÚT BẤM ---
-        main_content = tk.Frame(root, bg="#f8fafc", padx=20, pady=12)
+        main_content = tk.Frame(root, bg="#f8fafc", padx=20, pady=10)
         main_content.pack(fill="x")
 
         card_frame = tk.Frame(main_content, bg="#ffffff", highlightthickness=1, 
-                              highlightbackground="#e2e8f0", padx=20, pady=12)
+                              highlightbackground="#e2e8f0", padx=20, pady=10)
         card_frame.pack(fill="x")
 
         # Style cấu hình chung cho các nút bấm phẳng hiện đại
@@ -97,46 +97,57 @@ class PolyShipApp:
             "activeforeground": "#ffffff",
             "relief": "flat",
             "font": ("Segoe UI", 11, "bold"),
-            "width": 32,
-            "height": 2,
+            "width": 36,
+            "height": 1,
+            "pady": 4,
             "cursor": "hand2",
             "bd": 0
         }
 
-        # Nút 1: Nhập dữ liệu
-        self.btn_input = tk.Button(card_frame, text="📥 1. Nhập dữ liệu", **self.btn_style, command=self.input_data)
-        self.btn_input.pack(pady=(4, 0))
+        # Nút 1: Demo routing
+        self.btn_demo1 = tk.Button(card_frame, text="📍 1. Demo routing - shortest path", **self.btn_style, command=self.demo_routing)
+        self.btn_demo1.pack(pady=3)
+
+        # Nút 2: Demo MST
+        self.btn_demo2 = tk.Button(card_frame, text="🕸️ 2. Demo MST - mạng kho tối thiểu", **self.btn_style, command=self.demo_mst)
+        self.btn_demo2.pack(pady=3)
+
+        # Nút 3: Demo hash table đơn hàng
+        self.btn_demo3 = tk.Button(card_frame, text="🔑 3. Demo hash table đơn hàng", **self.btn_style, command=self.demo_hash_table)
+        self.btn_demo3.pack(pady=3)
+
+        # Nút 4: Demo hashing tổng hợp
+        self.btn_demo4 = tk.Button(card_frame, text="🧮 4. Demo hashing tổng hợp", **self.btn_style, command=self.demo_hashing_compound)
+        self.btn_demo4.pack(pady=3)
+
+        # Nút 5: Demo rolling hash
+        self.btn_demo5 = tk.Button(card_frame, text="🔍 5. Demo rolling hash tìm pattern log", **self.btn_style, command=self.demo_rolling_hash)
+        self.btn_demo5.pack(pady=3)
+
+        # Nút 6: Demo DP cơ bản
+        self.btn_demo6 = tk.Button(card_frame, text="🪜 6. Demo DP cơ bản (Fib, Stairs)", **self.btn_style, command=self.demo_dp_basics)
+        self.btn_demo6.pack(pady=3)
+
+        # Nút 7: Demo combo khuyến mãi
+        self.btn_demo7 = tk.Button(card_frame, text="🎁 7. Demo combo khuyến mãi (Knapsack)", **self.btn_style, command=self.demo_combo_knapsack)
+        self.btn_demo7.pack(pady=3)
 
         # Phụ: Nạp nhanh dữ liệu mẫu dạng link
-        self.lbl_demo_link = tk.Label(card_frame, text="⚡ Nạp nhanh dữ liệu mẫu", fg="#f27024", bg="#ffffff",
+        self.lbl_demo_link = tk.Label(card_frame, text="⚡ Nạp nhanh dữ liệu cấu hình mẫu", fg="#f27024", bg="#ffffff",
                                       font=("Segoe UI", 9, "underline bold"), cursor="hand2")
-        self.lbl_demo_link.pack(pady=(2, 4))
+        self.lbl_demo_link.pack(pady=(4, 2))
         self.lbl_demo_link.bind("<Button-1>", lambda e: self.load_demo_data())
-        self.lbl_demo_link.bind("<Enter>", lambda e: self.lbl_demo_link.config(fg="#d95f1c") if self.btn_input.cget("state") == "normal" else None)
-        self.lbl_demo_link.bind("<Leave>", lambda e: self.lbl_demo_link.config(fg="#f27024") if self.btn_input.cget("state") == "normal" else None)
 
-        # Nút 2: Xử lý
-        self.btn_process = tk.Button(card_frame, text="⚙️ 2. Xử lý (Routing & Hashing)", **self.btn_style, command=self.process_data)
-        self.btn_process.pack(pady=4)
-
-        # Nút 3: Tối ưu
-        self.btn_optimize = tk.Button(card_frame, text="⚡ 3. Tối ưu (MST & Knapsack)", **self.btn_style, command=self.optimize_data)
-        self.btn_optimize.pack(pady=4)
-
-        # Nút 4: Thông tin sinh viên
-        self.btn_info = tk.Button(card_frame, text="ℹ️ 4. Thông tin & Hướng dẫn", **self.btn_style, command=self.show_info)
-        self.btn_info.pack(pady=4)
-
-        # Nút 5: Thoát
+        # Nút 8: Thoát
         exit_style = self.btn_style.copy()
         exit_style["bg"] = "#0f172a"
         exit_style["activebackground"] = "#1e293b"
-        self.btn_exit = tk.Button(card_frame, text="🚪 5. Thoát chương trình", **exit_style, command=self.exit_program)
-        self.btn_exit.pack(pady=4)
+        self.btn_exit = tk.Button(card_frame, text="🚪 8. Thoát chương trình", **exit_style, command=self.exit_program)
+        self.btn_exit.pack(pady=3)
 
         # --- 3. KHUNG THANH TIẾN TRÌNH MÔ PHỎNG ---
         self.progress_frame = tk.Frame(main_content, bg="#f8fafc")
-        self.progress_frame.pack(fill="x", pady=(8, 0))
+        self.progress_frame.pack(fill="x", pady=(2, 0))
 
         style = ttk.Style()
         style.configure("Orange.Horizontal.TProgressbar", troughcolor='#e2e8f0', background='#f27024', thickness=12)
@@ -146,7 +157,7 @@ class PolyShipApp:
         self.progress_bar.pack(fill="x", padx=5)
 
         self.lbl_progress_status = tk.Label(self.progress_frame, text="Hệ thống sẵn sàng", 
-                                             font=("Segoe UI", 10, "bold"), fg="#64748b", bg="#f8fafc")
+                                             font=("Segoe UI", 9, "bold"), fg="#64748b", bg="#f8fafc")
         self.lbl_progress_status.pack(pady=2)
 
         # --- 4. KHUNG NHẬT KÝ HỆ THỐNG ---
@@ -186,30 +197,36 @@ class PolyShipApp:
         self.txt_log.config(yscrollcommand=scrollbar.set)
 
         # Footer
-        footer = tk.Label(root, text="Thiết kế sườn bài bởi Sinh viên FPT Polytechnic", 
-                          font=("Segoe UI", 8), fg="#94a3b8", bg="#f8fafc")
+        footer = tk.Label(root, text="Sinh viên thực hiện: Nguyễn Thành Hưng - PS47270 - Lớp ITA107", 
+                          font=("Segoe UI", 8, "bold"), fg="#94a3b8", bg="#f8fafc")
         footer.pack(side="bottom", pady=6)
 
         # Lưu trữ nội dung text gốc của các nút bấm để hover & reset trạng thái sạch sẽ
         self.btn_texts = {
-            self.btn_input: "📥 1. Nhập dữ liệu",
-            self.btn_process: "⚙️ 2. Xử lý (Routing & Hashing)",
-            self.btn_optimize: "⚡ 3. Tối ưu (MST & Knapsack)",
-            self.btn_info: "ℹ️ 4. Thông tin & Hướng dẫn",
-            self.btn_exit: "🚪 5. Thoát chương trình",
+            self.btn_demo1: "📍 1. Demo routing - shortest path",
+            self.btn_demo2: "🕸️ 2. Demo MST - mạng kho tối thiểu",
+            self.btn_demo3: "🔑 3. Demo hash table đơn hàng",
+            self.btn_demo4: "🧮 4. Demo hashing tổng hợp",
+            self.btn_demo5: "🔍 5. Demo rolling hash tìm pattern log",
+            self.btn_demo6: "🪜 6. Demo DP cơ bản (Fib, Stairs)",
+            self.btn_demo7: "🎁 7. Demo combo khuyến mãi (Knapsack)",
+            self.btn_exit: "🚪 8. Thoát chương trình",
             self.btn_export: "📤 Xuất Nhật Ký"
         }
 
         # Thiết lập hiệu ứng Hover cho toàn bộ nút bấm
-        self.setup_hover(self.btn_input, "#f27024", "#d95f1c")
-        self.setup_hover(self.btn_process, "#f27024", "#d95f1c")
-        self.setup_hover(self.btn_optimize, "#f27024", "#d95f1c")
-        self.setup_hover(self.btn_info, "#f27024", "#d95f1c")
+        self.setup_hover(self.btn_demo1, "#f27024", "#d95f1c")
+        self.setup_hover(self.btn_demo2, "#f27024", "#d95f1c")
+        self.setup_hover(self.btn_demo3, "#f27024", "#d95f1c")
+        self.setup_hover(self.btn_demo4, "#f27024", "#d95f1c")
+        self.setup_hover(self.btn_demo5, "#f27024", "#d95f1c")
+        self.setup_hover(self.btn_demo6, "#f27024", "#d95f1c")
+        self.setup_hover(self.btn_demo7, "#f27024", "#d95f1c")
         self.setup_hover(self.btn_exit, "#0f172a", "#1e293b")
         self.setup_hover(self.btn_export, "#475569", "#334155")
 
         # Ghi log khởi động hệ thống
-        self.log_message("Khởi chạy hệ thống POLY-SHIP thành công.", "info")
+        self.log_message("Khởi chạy hệ thống thử nghiệm POLY-SHIP thành công.", "info")
 
     def setup_hover(self, button, normal_color, hover_color):
         """Thiết lập hiệu ứng hover đổi màu nền và dịch chuyển văn bản biểu tượng ➔"""
@@ -269,6 +286,235 @@ class PolyShipApp:
             # Gọi hàm hiển thị kết quả
             final_callback()
 
+    # --- 1. DEMO DIJKSTRA ROUTING ---
+    def show_input_dialog(self, title, fields, callback):
+        """
+        Hiển thị một cửa sổ nhập liệu nhỏ dạng modal.
+        fields: danh sách các tuple (tên_trường, khóa, giá_trị_mặc_định)
+        callback: hàm được gọi sau khi nhấn Chạy với tham số là dict chứa các giá trị nhập.
+        """
+        dialog = tk.Toplevel(self.root)
+        dialog.title(title)
+        dialog.configure(bg="#f8fafc")
+        dialog.resizable(False, False)
+        dialog.transient(self.root)
+        dialog.grab_set()
+        
+        # Tiêu đề con
+        lbl_head = tk.Label(dialog, text=f"Nhập thông số cho {title}", font=("Segoe UI", 10, "bold"), fg="#f27024", bg="#f8fafc")
+        lbl_head.pack(pady=(15, 10))
+        
+        form_frame = tk.Frame(dialog, bg="#f8fafc")
+        form_frame.pack(fill="both", expand=True, padx=20)
+        
+        entries = {}
+        for idx, (label_text, key, default_val) in enumerate(fields):
+            lbl = tk.Label(form_frame, text=label_text, font=("Segoe UI", 9, "bold"), fg="#475569", bg="#f8fafc")
+            lbl.grid(row=idx, column=0, sticky="w", pady=5)
+            
+            ent = tk.Entry(form_frame, font=("Segoe UI", 10), relief="solid", bd=1)
+            ent.insert(0, str(default_val))
+            ent.grid(row=idx, column=1, sticky="ew", padx=(10, 0), pady=5)
+            
+            entries[key] = ent
+            
+        form_frame.columnconfigure(1, weight=1)
+        
+        def on_submit():
+            results = {}
+            for k, ent in entries.items():
+                results[k] = ent.get().strip()
+            dialog.destroy()
+            callback(results)
+            
+        btn_submit = tk.Button(dialog, text="🚀 Chạy Thuật Toán", bg="#f27024", fg="#ffffff",
+                               activebackground="#d95f1c", activeforeground="#ffffff", relief="flat",
+                               font=("Segoe UI", 10, "bold"), cursor="hand2", bd=0, pady=6, command=on_submit)
+        btn_submit.pack(fill="x", padx=20, pady=15)
+        
+        num_fields = len(fields)
+        height = 120 + num_fields * 40
+        dialog.geometry(f"420x{height}")
+        
+        # Căn giữa dialog
+        dialog.update_idletasks()
+        x = self.root.winfo_x() + (self.root.winfo_width() - dialog.winfo_width()) // 2
+        y = self.root.winfo_y() + (self.root.winfo_height() - dialog.winfo_height()) // 2
+        dialog.geometry(f"+{x}+{y}")
+
+    # --- 1. DEMO DIJKSTRA ROUTING ---
+    def demo_routing(self):
+        """Chạy giả lập Demo 1: Định tuyến tìm đường đi ngắn nhất Dijkstra"""
+        def run_sim(results):
+            src = results["source"]
+            tgt = results["target"]
+            if not src or not tgt:
+                messagebox.showwarning("Cảnh báo", "Vui lòng nhập đầy đủ Kho nguồn và Kho đích!")
+                return
+            def show_result():
+                msg = f"Thuật toán định tuyến Dijkstra từ {src} đến {tgt} đã chạy thành công!"
+                self.log_message(msg, "success")
+                messagebox.showinfo("Demo Routing Dijkstra", msg)
+            self.run_progress_simulation(
+                status_msg=f"Đang tính toán tuyến đường ngắn nhất Dijkstra từ {src} đến {tgt}...",
+                finish_msg="Hoàn thành giải thuật Dijkstra.",
+                final_callback=show_result
+            )
+            
+        self.show_input_dialog("Định Tuyến Dijkstra", [
+            ("Kho nguồn (Source):", "source", "Kho_A"),
+            ("Kho đích (Target):", "target", "Kho_D")
+        ], run_sim)
+
+    # --- 2. DEMO MST KRUSKAL ---
+    def demo_mst(self):
+        """Chạy giả lập Demo 2: Cây khung tối thiểu Kruskal"""
+        def run_sim(results):
+            nodes = results["nodes"]
+            if not nodes:
+                return
+            def show_result():
+                msg = "Thuật toán thiết kế mạng kho tối thiểu Kruskal đã chạy thành công!"
+                self.log_message(msg, "success")
+                messagebox.showinfo("Demo Kruskal MST", msg)
+            self.run_progress_simulation(
+                status_msg="Đang chạy thuật toán Kruskal MST và cấu trúc Union-Find...",
+                finish_msg="Hoàn thành giải thuật Kruskal MST.",
+                final_callback=show_result
+            )
+            
+        self.show_input_dialog("Mạng Kho Tối Thiểu MST", [
+            ("Danh sách Kho:", "nodes", "Kho_A, Kho_B, Kho_C, Kho_D")
+        ], run_sim)
+
+    # --- 3. DEMO HASH TABLE ---
+    def demo_hash_table(self):
+        """Chạy giả lập Demo 3: Tra cứu bảng băm đơn hàng dùng Separate Chaining"""
+        def run_sim(results):
+            act = results["action"].strip().lower()
+            oid = results["order_id"]
+            info = results["info"]
+            if act not in ["insert", "search", "delete"]:
+                messagebox.showwarning("Cảnh báo", "Hành động không hợp lệ! Vui lòng chỉ nhập 'Insert', 'Search' hoặc 'Delete'.")
+                return
+            if not oid:
+                return
+            
+            def show_result():
+                if act == "insert":
+                    msg = f"Thuật toán bảng băm: Chèn thành công đơn hàng '{oid}' ({info})!"
+                elif act == "search":
+                    msg = f"Thuật toán bảng băm: Tìm thấy đơn hàng '{oid}'!"
+                else:
+                    msg = f"Thuật toán bảng băm: Đã xóa thành công đơn hàng '{oid}'!"
+                self.log_message(msg, "success")
+                messagebox.showinfo("Demo Hash Table đơn hàng", msg)
+                
+            self.run_progress_simulation(
+                status_msg=f"Đang thực thi bảng băm hành động '{results['action']}' cho '{oid}'...",
+                finish_msg="Hoàn thành thao tác bảng băm.",
+                final_callback=show_result
+            )
+            
+        self.show_input_dialog("Bảng Băm Đơn Hàng", [
+            ("Hành động (Insert/Search/Delete):", "action", "Insert"),
+            ("Mã đơn hàng (Order ID):", "order_id", "HD23"),
+            ("Thông tin đơn hàng:", "info", "TP.HCM - 320k")
+        ], run_sim)
+
+    # --- 4. DEMO HASHING TỔNG HỢP ---
+    def demo_hashing_compound(self):
+        """Chạy giả lập Demo 4: Các bài toán Hashing tổng hợp"""
+        def run_sim(results):
+            def show_result():
+                msg = "Các thuật toán Hashing tổng hợp đã chạy thành công!"
+                self.log_message(msg, "success")
+                messagebox.showinfo("Demo Hashing tổng hợp", msg)
+            self.run_progress_simulation(
+                status_msg="Đang tính toán các bài toán Anagram, Streak và Subarray Sum bằng hash...",
+                finish_msg="Hoàn thành demo Hashing tổng hợp.",
+                final_callback=show_result
+            )
+            
+        self.show_input_dialog("Hashing Tổng Hợp", [
+            ("Danh sách mã Coupon:", "coupons", "SAVE10, AVES10, SALE5, LASE5, EVAS10"),
+            ("Danh sách ngày giao hàng:", "days", "100, 4, 200, 1, 3, 2, 5"),
+            ("Doanh thu tích lũy:", "revenues", "10, 2, -2, -20, 10"),
+            ("Mục tiêu K:", "k", "-10")
+        ], run_sim)
+
+    # --- 5. DEMO ROLLING HASH ---
+    def demo_rolling_hash(self):
+        """Chạy giả lập Demo 5: Tìm pattern log bằng Rabin-Karp Rolling Hash"""
+        def run_sim(results):
+            txt = results["text"]
+            pat = results["pattern"]
+            if not txt or not pat:
+                return
+            def show_result():
+                msg = f"Thuật toán tìm kiếm Rolling Hash Rabin-Karp cho từ khóa '{pat}' đã chạy thành công!"
+                self.log_message(msg, "success")
+                messagebox.showinfo("Demo Rolling Hash", msg)
+            self.run_progress_simulation(
+                status_msg=f"Đang băm trượt Rabin-Karp tìm '{pat}' trên tệp logs...",
+                finish_msg="Hoàn thành demo Rolling Hash.",
+                final_callback=show_result
+            )
+            
+        self.show_input_dialog("Rabin-Karp Rolling Hash", [
+            ("Văn bản Logs (Text):", "text", "SYSTEM_LOG_WARN_AVES10_LOG_SAVE10_PROCESS_ERROR"),
+            ("Pattern cần tìm:", "pattern", "SAVE10")
+        ], run_sim)
+
+    # --- 6. DEMO DP CO BAN ---
+    def demo_dp_basics(self):
+        """Chạy giả lập Demo 6: Quy hoạch động cơ bản"""
+        def run_sim(results):
+            n_str = results["n"]
+            try:
+                n = int(n_str)
+            except ValueError:
+                messagebox.showerror("Lỗi nhập liệu", "N phải là số nguyên!")
+                return
+            def show_result():
+                msg = f"Thuật toán Quy hoạch động cơ bản với N={n} đã chạy thành công!"
+                self.log_message(msg, "success")
+                messagebox.showinfo("Demo DP Cơ Bản", msg)
+            self.run_progress_simulation(
+                status_msg=f"Đang lập bảng quy hoạch động tính toán Fibonacci & Climbing Stairs với N={n}...",
+                finish_msg="Hoàn thành demo DP cơ bản.",
+                final_callback=show_result
+            )
+            
+        self.show_input_dialog("DP Cơ Bản (Fib & Stairs)", [
+            ("Tham số N:", "n", "10")
+        ], run_sim)
+
+    # --- 7. DEMO COMBO KNAPSACK ---
+    def demo_combo_knapsack(self):
+        """Chạy giả lập Demo 7: Combo khuyến mãi cái túi 0/1"""
+        def run_sim(results):
+            b_str = results["b"]
+            try:
+                b = int(b_str)
+            except ValueError:
+                messagebox.showerror("Lỗi nhập liệu", "Ngân sách B phải là số nguyên!")
+                return
+            def show_result():
+                msg = f"Thuật toán Quy hoạch động cái túi (Knapsack 0/1) với ngân sách B={b} đã chạy thành công!"
+                self.log_message(msg, "success")
+                messagebox.showinfo("Demo Combo Knapsack", msg)
+            self.run_progress_simulation(
+                status_msg=f"Đang thiết lập bảng quy hoạch động cái túi Knapsack với ngân sách B={b}...",
+                finish_msg="Hoàn thành demo combo tối ưu Knapsack.",
+                final_callback=show_result
+            )
+            
+        self.show_input_dialog("Combo Knapsack 0/1", [
+            ("Ngân sách tối đa B:", "b", "40")
+        ], run_sim)
+
+
     def input_data(self):
         """Chức năng 1: Nhập dữ liệu với xử lý lỗi và mô phỏng đọc file"""
         self.log_message("Đang yêu cầu nạp dữ liệu...", "info")
@@ -312,30 +558,8 @@ class PolyShipApp:
             self.log_message(f"Lỗi hệ thống: {str(e)}", "error")
             messagebox.showerror("Lỗi hệ thống", f"Đã xảy ra lỗi không xác định: {str(e)}")
 
-    def process_data(self):
-        """Chức năng 2: Xử lý dữ liệu"""
-        def show_result():
-            messagebox.showinfo("Xử lý dữ liệu", "Hệ thống đang tiến hành xử lý dữ liệu:\n- Phân tích đường đi ngắn nhất (Dijkstra)\n- Tra cứu băm đơn hàng (Hashing)")
-
-        self.run_progress_simulation(
-            status_msg="Đang tính toán phân tích Dijkstra & Hashing đơn hàng...",
-            finish_msg="Hoàn thành sườn xử lý dữ liệu.",
-            final_callback=show_result
-        )
-
-    def optimize_data(self):
-        """Chức năng 3: Tối ưu hóa"""
-        def show_result():
-            messagebox.showinfo("Tối ưu hóa", "Hệ thống đang chạy thuật toán tối ưu:\n- Tính toán mạng liên kết kho tối thiểu (Kruskal MST)\n- Đề xuất combo khuyến mãi (Quy hoạch động Knapsack)")
-
-        self.run_progress_simulation(
-            status_msg="Đang tính toán mạng liên kết kho Kruskal MST & lập bảng Knapsack...",
-            finish_msg="Hoàn thành sườn tối ưu hóa.",
-            final_callback=show_result
-        )
-
     def show_info(self):
-        """Chức năng 4: Hiển thị thông tin sinh viên"""
+        """Hiển thị thông tin sinh viên"""
         self.log_message("Xem thông tin sinh viên Nguyễn Thành Hưng.", "info")
         info_message = (
             "=== THÔNG TIN SINH VIÊN ===\n"
@@ -344,15 +568,14 @@ class PolyShipApp:
             "- Lớp: ITA107\n"
             "- Môn học: Cấu trúc dữ liệu và giải thuật (ITA107)\n\n"
             "=== HƯỚNG DẪN SỬ DỤNG ===\n"
-            "1. Nhấn '1. Nhập dữ liệu' để chọn file dữ liệu bản đồ (.txt hoặc .csv).\n"
-            "2. Nhấn '2. Xử lý' để giả lập tìm đường đi ngắn nhất Dijkstra và tra cứu đơn hàng bằng băm.\n"
-            "3. Nhấn '3. Tối ưu' để giả lập thiết kế liên kết kho Kruskal MST và combo Knapsack.\n"
-            "4. Nhấn '5. Thoát chương trình' để đóng ứng dụng một cách an toàn.\n"
+            "1. Nhấn các nút Demo thuật toán từ 1 đến 7 để chạy giả lập từng trường hợp thực tế.\n"
+            "2. Hệ thống sẽ khóa các nút, chạy thanh tiến trình giả lập, phát âm báo và hiển thị chi tiết thuật toán.\n"
+            "3. Ô nhật ký Console lưu trữ toàn bộ các bước chạy để dễ dàng theo dõi và xuất file báo cáo.\n"
         )
         messagebox.showinfo("Thông tin & Hướng dẫn", info_message)
 
     def exit_program(self):
-        """Chức năng 5: Xác nhận và thoát"""
+        """Xác nhận và thoát"""
         self.log_message("Yêu cầu thoát hệ thống...", "warning")
         confirm = messagebox.askyesno("Xác nhận thoát", "Bạn có chắc chắn muốn thoát ứng dụng không?")
         if confirm:
@@ -362,7 +585,7 @@ class PolyShipApp:
             self.log_message("Hủy thoát hệ thống.", "info")
 
     def export_log(self):
-        """Chức năng nâng cao: Xuất toàn bộ văn bản trong ô text log ra file log_hoat_dong.txt"""
+        """Xuất toàn bộ văn bản trong ô text log ra file log_hoat_dong.txt"""
         try:
             log_content = self.txt_log.get("1.0", tk.END).strip()
             if not log_content:
@@ -382,11 +605,11 @@ class PolyShipApp:
             messagebox.showerror("Lỗi hệ thống", f"Không thể xuất nhật ký ra file: {str(e)}")
 
     def load_demo_data(self):
-        """Chức năng nâng cao: Tự động tạo tệp tin dữ liệu mẫu du_lieu_mau.txt và nạp nhanh vào ứng dụng"""
-        if self.btn_input.cget("state") == "disabled":
+        """Tự động tạo tệp tin dữ liệu mẫu du_lieu_mau.txt và nạp nhanh vào ứng dụng"""
+        if self.btn_demo1.cget("state") == "disabled":
             return
         
-        self.log_message("Yêu cầu nạp nhanh dữ liệu mẫu...", "info")
+        self.log_message("Yêu cầu nạp nhanh dữ liệu cấu hình mẫu...", "info")
         try:
             # Tạo dữ liệu mẫu phù hợp với Logistics / Map / Orders
             demo_content = (
@@ -424,8 +647,7 @@ class PolyShipApp:
             messagebox.showerror("Lỗi dữ liệu mẫu", f"Không thể nạp dữ liệu mẫu: {str(e)}")
 
     def play_sound(self, sound_type="success"):
-        """Chức năng nâng cao: Phát âm thanh cảnh báo hệ thống Windows (nativeliy)"""
-        import os
+        """Phát âm thanh cảnh báo hệ thống Windows (natively)"""
         if os.name == "nt":
             try:
                 import winsound
