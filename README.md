@@ -1,4 +1,4 @@
-# HỆ THỐNG QUẢN LÝ HẬU CẦN POLY-SHIP - ASSIGNMENT HOÀN THÀNH
+# HỆ THỐNG QUẢN LÝ HẬU CẦN POLY-SHIP - ASSIGNMENT DSA
 
 Đồ án Assignment môn học **Cấu trúc dữ liệu và giải thuật (ITA107)** tại FPT Polytechnic.
 
@@ -10,39 +10,42 @@
 
 ---
 
-## 🌟 Tính năng chính (Giao diện đơn giản & Mô phỏng trực quan)
+## 📅 Tiến độ thực hiện Dự án (Project Progress)
 
-Ứng dụng được thiết kế tự chứa (Self-contained) trong duy nhất một tệp tin [main_assignment.py](file:///d:/FPT%20Polytechnic/2026/HK%20Summer%202026/ITA107_%20C%E1%BA%A5u%20tr%C3%BAc%20d%E1%BB%AF%20li%E1%BB%87u%20v%C3%A0%20gi%E1%BA%A3i%20thu%E1%BA%ADt/ASM/main_assignment.py) giúp đảm bảo sự ổn định và dễ dàng chấm bài:
+Hiện tại dự án đang được triển khai theo mô hình module hóa và đạt được các kết quả cụ thể dưới đây:
 
-1. **Giao diện Flat UI nhỏ gọn (`520x760`)**:
-   - Khung Banner chứa Logo FPT Polytechnic và đèn tín hiệu online thời gian thực.
-   - Container dạng Card gom nhóm 8 nút bấm chức năng đại diện cho menu console của đề bài.
-   - Nhãn thông tin sinh viên ở chân trang.
+### 📍 Phần 1: Định tuyến giữa các kho (routing.py) - **Đang hoàn thiện**
+- [x] **Thuật toán Dijkstra (Tìm chặng ngắn nhất)**:
+  - Cài đặt hàm `build_graph(edges)` để xây dựng danh sách kề vô hướng từ danh sách cạnh thô.
+  - Cài đặt giải thuật `dijkstra(graph, source)` tìm khoảng cách ngắn nhất sử dụng hàng đợi ưu tiên (`heapq`).
+  - Cài đặt hàm `shortest_route(graph, source, target)` truy vết hành trình tối ưu và tổng chi phí.
+- [x] **Trực quan hóa Đồ thị mạng kho (Visual Graph Canvas)**:
+  - Hiện thực vẽ trực quan mạng lưới kho dạng đồ thị trực tiếp trên cửa sổ phụ Tkinter Canvas.
+  - Tự động định vị các kho hàng theo vòng tròn, vẽ kết nối và in trọng số chi phí trên từng cung đường.
+  - Highlight toàn bộ lộ trình đi qua và các kho hàng đích bằng **màu cam thương hiệu FPT**.
+- [x] **Phân tích dữ liệu tệp CSV**:
+  - Thêm nút **📥 Nạp dữ liệu từ tệp CSV** trên GUI cho phép người dùng nạp file bản đồ tự chọn.
+  - Xử lý kiểm tra dữ liệu trống và hiển thị cảnh báo an toàn cho người dùng khi chạy định tuyến mà chưa nạp dữ liệu.
+- [ ] **Thuật toán Kruskal MST & DSU** (Sắp triển khai).
 
-2. **Mô phỏng 7 Demo thuật toán chi tiết**:
-   - **📍 1. Demo routing**: Mô phỏng tìm chặng đi ngắn nhất Dijkstra giữa các kho.
-   - **🕸️ 2. Demo MST**: Mô phỏng tìm cây khung tối thiểu Kruskal kết nối mạng cáp chính của kho hàng.
-   - **🔑 3. Demo hash table**: Trực quan hóa chèn/xóa và xung đột băm trên chuỗi bucket băm Separate Chaining.
-   - **🧮 4. Demo hashing tổng hợp**: Nhóm mã coupon Anagram, tính chuỗi ngày giao liên tục dài nhất và đếm khoảng doanh thu bằng K.
-   - **🔍 5. Demo rolling hash**: Mô phỏng tìm pattern trong logs log bằng thuật toán Rabin-Karp.
-   - **🪜 6. Demo DP cơ bản**: Mô phỏng tính Fibonacci (Memoization) và Leo thang (Tabulation).
-   - **🎁 7. Demo combo khuyến mãi**: Tối ưu combo cái túi Knapsack 0/1 (so sánh 2D và 1D).
-   - **🚪 8. Thoát**: Hộp thoại xác nhận đóng phần mềm.
+### 🔑 Phần 2: Hashing cho đơn hàng và dữ liệu (hashing_tools.py) - *Chưa triển khai*
+- [ ] Lớp bảng băm `OrderHashTable` xử lý đụng độ bằng phương pháp Separate Chaining.
+- [ ] Các hàm tối ưu hóa Hashing: Coupon Anagrams, Longest consecutive days, Subarray sum = k, Rabin-Karp Rolling Hash.
 
-3. **Cơ chế tiến trình và âm báo**:
-   - Khóa toàn bộ các nút bấm chống double-click khi đang xử lý.
-   - Chạy thanh tiến trình giả lập từ 0% đến 100% màu cam FPT.
-   - Tự động phát âm thanh cảnh báo hệ thống (`winsound`) khi hoàn thành xử lý.
-
-4. **Nhật ký Console phân cấp màu sắc**:
-   - Ghi nhận chi tiết kết quả chạy mẫu, mô phỏng dữ liệu vào/ra và phần giải thích ngắn về thuật toán.
-   - Hỗ trợ xuất nhật ký ra tệp tin `log_hoat_dong.txt`.
+### 🎁 Phần 3: Dynamic Programming gợi ý khuyến mãi (promo_optimizer.py) - *Chưa triển khai*
+- [ ] Các hàm DP cơ bản: Fibonacci, Climbing Stairs.
+- [ ] Tối ưu hóa combo cái túi Knapsack 0/1 (bản 2D vẽ bảng/truy vết và bản 1D tối ưu bộ nhớ).
 
 ---
 
-## 🛠️ Hướng dẫn khởi chạy
-Mở Command Prompt/Terminal trong thư mục dự án và chạy:
-```bash
-python main_assignment.py
-```
-*(Khuyên dùng hệ điều hành Windows và Python 3.8+)*
+## 🛠️ Hướng dẫn khởi chạy & Kiểm thử
+
+1. **Khởi chạy ứng dụng**:
+   Mở Command Prompt/Terminal trong thư mục dự án và chạy:
+   ```bash
+   python main_assignment.py
+   ```
+2. **Kiểm thử chức năng định tuyến (Dijkstra)**:
+   * Khi vừa mở ứng dụng, bấm nút **"1. Định tuyến - shortest path"** $\rightarrow$ Hệ thống cảnh báo chưa có dữ liệu.
+   * Bấm nút **"📥 Nạp dữ liệu từ tệp CSV"** và chọn tệp `du_lieu_kho.csv` có sẵn trong thư mục, hoặc bấm liên kết **"Nạp nhanh dữ liệu cấu hình mẫu"** ở góc dưới.
+   * Bấm lại nút **"1. Định tuyến - shortest path"**, nhập kho xuất phát (ví dụ: `WH1`) và kho đích (ví dụ: `HN`) $\rightarrow$ Sơ đồ đồ thị trực quan sẽ tự động hiển thị lộ trình ngắn nhất được highlight nổi bật.
