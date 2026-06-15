@@ -4,6 +4,8 @@ import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 from datetime import datetime
 import routing
+import mst
+import hashing_tools
 
 # Đảm bảo Python có thể tìm thấy các file cùng thư mục
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -110,45 +112,32 @@ class PolyShipApp:
         }
 
         # Nút 1: Định tuyến tìm đường đi ngắn nhất
-        self.btn_demo1 = tk.Button(card_frame, text="📍 1. Định tuyến - shortest path", **self.btn_style, command=self.demo_routing)
-        self.btn_demo1.pack(pady=3)
+        self.btn_routing = tk.Button(card_frame, text="📍 1. Tuyến giao hàng ngắn nhất", **self.btn_style, command=self.run_routing)
+        self.btn_routing.pack(pady=3)
 
-        # Nút 2: Cây khung tối thiểu MST
-        self.btn_demo2 = tk.Button(card_frame, text="🕸️ 2. MST - mạng kho tối thiểu", **self.btn_style, command=self.demo_mst)
-        self.btn_demo2.pack(pady=3)
+        # Nút 2: Đường truyền nội bộ riêng giữa các kho
+        self.btn_mst = tk.Button(card_frame, text="🕸️ 2. Đường truyền nội bộ riêng giữa các kho", **self.btn_style, command=self.run_mst)
+        self.btn_mst.pack(pady=3)
 
-        # Nút 3: Bảng băm đơn hàng
-        self.btn_demo3 = tk.Button(card_frame, text="🔑 3. Hash table đơn hàng", **self.btn_style, command=self.demo_hash_table)
-        self.btn_demo3.pack(pady=3)
+        # Nút 3: Tra cứu đơn hàng
+        self.btn_hash_table = tk.Button(card_frame, text="🔑 3. Tra cứu đơn hàng", **self.btn_style, command=self.run_hash_table)
+        self.btn_hash_table.pack(pady=3)
 
         # Nút 4: Hashing tổng hợp
-        self.btn_demo4 = tk.Button(card_frame, text="🧮 4. Hashing tổng hợp", **self.btn_style, command=self.demo_hashing_compound)
-        self.btn_demo4.pack(pady=3)
+        self.btn_hashing_compound = tk.Button(card_frame, text="🧮 4. Hashing tổng hợp", **self.btn_style, command=self.run_hashing_compound)
+        self.btn_hashing_compound.pack(pady=3)
 
         # Nút 5: Tìm pattern log bằng Rolling hash
-        self.btn_demo5 = tk.Button(card_frame, text="🔍 5. Rolling hash tìm pattern log", **self.btn_style, command=self.demo_rolling_hash)
-        self.btn_demo5.pack(pady=3)
+        self.btn_rolling_hash = tk.Button(card_frame, text="🔍 5. Rolling hash tìm pattern log", **self.btn_style, command=self.run_rolling_hash)
+        self.btn_rolling_hash.pack(pady=3)
 
         # Nút 6: DP cơ bản
-        self.btn_demo6 = tk.Button(card_frame, text="🪜 6. DP cơ bản (Fib, Stairs)", **self.btn_style, command=self.demo_dp_basics)
-        self.btn_demo6.pack(pady=3)
+        self.btn_dp_basics = tk.Button(card_frame, text="🪜 6. DP cơ bản (Fib, Stairs)", **self.btn_style, command=self.run_dp_basics)
+        self.btn_dp_basics.pack(pady=3)
 
         # Nút 7: Combo khuyến mãi
-        self.btn_demo7 = tk.Button(card_frame, text="🎁 7. Combo khuyến mãi (Knapsack)", **self.btn_style, command=self.demo_combo_knapsack)
-        self.btn_demo7.pack(pady=3)
-
-        # Nút Nạp Dữ Liệu từ tệp CSV
-        upload_style = self.btn_style.copy()
-        upload_style["bg"] = "#10b981"  # Màu xanh lá nổi bật, thân thiện
-        upload_style["activebackground"] = "#059669"
-        self.btn_upload = tk.Button(card_frame, text="📥 Nạp dữ liệu từ tệp CSV", **upload_style, command=self.input_data)
-        self.btn_upload.pack(pady=3)
-
-        # Phụ: Nạp nhanh dữ liệu mẫu dạng link
-        self.lbl_demo_link = tk.Label(card_frame, text="⚡ Nạp nhanh dữ liệu cấu hình mẫu", fg="#f27024", bg="#ffffff",
-                                      font=("Segoe UI", 9, "underline bold"), cursor="hand2")
-        self.lbl_demo_link.pack(pady=(4, 2))
-        self.lbl_demo_link.bind("<Button-1>", lambda e: self.load_demo_data())
+        self.btn_combo_knapsack = tk.Button(card_frame, text="🎁 7. Combo khuyến mãi (Knapsack)", **self.btn_style, command=self.run_combo_knapsack)
+        self.btn_combo_knapsack.pack(pady=3)
 
         # Nút 8: Thoát
         exit_style = self.btn_style.copy()
@@ -215,32 +204,33 @@ class PolyShipApp:
 
         # Lưu trữ nội dung text gốc của các nút bấm để hover & reset trạng thái sạch sẽ
         self.btn_texts = {
-            self.btn_demo1: "📍 1. Định tuyến - shortest path",
-            self.btn_demo2: "🕸️ 2. MST - mạng kho tối thiểu",
-            self.btn_demo3: "🔑 3. Hash table đơn hàng",
-            self.btn_demo4: "🧮 4. Hashing tổng hợp",
-            self.btn_demo5: "🔍 5. Rolling hash tìm pattern log",
-            self.btn_demo6: "🪜 6. DP cơ bản (Fib, Stairs)",
-            self.btn_demo7: "🎁 7. Combo khuyến mãi (Knapsack)",
-            self.btn_upload: "📥 Nạp dữ liệu từ tệp CSV",
+            self.btn_routing: "📍 1. Tuyến giao hàng ngắn nhất",
+            self.btn_mst: "🕸️ 2. Đường truyền nội bộ riêng giữa các kho",
+            self.btn_hash_table: "🔑 3. Tra cứu đơn hàng",
+            self.btn_hashing_compound: "🧮 4. Hashing tổng hợp",
+            self.btn_rolling_hash: "🔍 5. Rolling hash tìm pattern log",
+            self.btn_dp_basics: "🪜 6. DP cơ bản (Fib, Stairs)",
+            self.btn_combo_knapsack: "🎁 7. Combo khuyến mãi (Knapsack)",
             self.btn_exit: "🚪 8. Thoát chương trình",
             self.btn_export: "📤 Xuất Nhật Ký"
         }
 
         # Thiết lập hiệu ứng Hover cho toàn bộ nút bấm
-        self.setup_hover(self.btn_demo1, "#f27024", "#d95f1c")
-        self.setup_hover(self.btn_demo2, "#f27024", "#d95f1c")
-        self.setup_hover(self.btn_demo3, "#f27024", "#d95f1c")
-        self.setup_hover(self.btn_demo4, "#f27024", "#d95f1c")
-        self.setup_hover(self.btn_demo5, "#f27024", "#d95f1c")
-        self.setup_hover(self.btn_demo6, "#f27024", "#d95f1c")
-        self.setup_hover(self.btn_demo7, "#f27024", "#d95f1c")
-        self.setup_hover(self.btn_upload, "#10b981", "#059669")
+        self.setup_hover(self.btn_routing, "#f27024", "#d95f1c")
+        self.setup_hover(self.btn_mst, "#f27024", "#d95f1c")
+        self.setup_hover(self.btn_hash_table, "#f27024", "#d95f1c")
+        self.setup_hover(self.btn_hashing_compound, "#f27024", "#d95f1c")
+        self.setup_hover(self.btn_rolling_hash, "#f27024", "#d95f1c")
+        self.setup_hover(self.btn_dp_basics, "#f27024", "#d95f1c")
+        self.setup_hover(self.btn_combo_knapsack, "#f27024", "#d95f1c")
         self.setup_hover(self.btn_exit, "#0f172a", "#1e293b")
         self.setup_hover(self.btn_export, "#475569", "#334155")
 
         # Ghi log khởi động hệ thống
-        self.log_message("Khởi chạy hệ thống thử nghiệm POLY-SHIP thành công.", "info")
+        self.log_message("Khởi chạy hệ thống POLY-SHIP thành công.", "info")
+
+        # Cấu hình Bảng băm đơn hàng (Khởi tạo và tải từ cơ sở dữ liệu CSV)
+        self.load_orders_from_csv()
 
     def setup_hover(self, button, normal_color, hover_color):
         """Thiết lập hiệu ứng hover đổi màu nền và dịch chuyển văn bản biểu tượng ➔"""
@@ -291,14 +281,14 @@ class PolyShipApp:
             self.log_message(f"Lỗi khi đọc và phân tích file CSV: {str(e)}", "error")
             raise e
 
-    def visualize_graph(self, vertices, edges, path=None, highlight_edges=None):
-        """Hiển thị cửa sổ đồ thị trực quan vẽ bằng Canvas"""
+    def visualize_graph(self, vertices, edges, path=None, highlight_edges=None, cost=None):
+        """Hiển thị cửa sổ đồ thị trực quan vẽ bằng Canvas tích hợp chọn nguồn/đích trực tiếp"""
         import math
         
         # Tạo cửa sổ phụ
         vis_win = tk.Toplevel(self.root)
         vis_win.title("Trực quan hóa Bản đồ định tuyến POLY-SHIP")
-        vis_win.geometry("700x600")
+        vis_win.geometry("700x670")
         vis_win.configure(bg="#f8fafc")
         vis_win.transient(self.root)
         vis_win.grab_set()
@@ -311,31 +301,76 @@ class PolyShipApp:
             fg="#f27024", 
             bg="#f8fafc"
         )
-        lbl_title.pack(pady=10)
+        lbl_title.pack(pady=(10, 5))
         
-        # Chú thích màu sắc
-        legend_frame = tk.Frame(vis_win, bg="#f8fafc")
-        legend_frame.pack(fill="x", padx=20)
+        # BẢNG ĐIỀU KHIỂN TRỰC TIẾP TRÊN DIAGRAM (Top Control Panel)
+        ctrl_frame = tk.LabelFrame(vis_win, text=" Bộ chọn chặng định tuyến trực tiếp ", font=("Segoe UI", 9, "bold"), fg="#475569", bg="#f8fafc", padx=10, pady=5)
+        ctrl_frame.pack(fill="x", padx=20, pady=5)
         
-        # Chú thích 1
-        lbl_leg1 = tk.Label(legend_frame, text="● Kho hàng", fg="#64748b", bg="#f8fafc", font=("Segoe UI", 9, "bold"))
-        lbl_leg1.pack(side="left", padx=10)
-        # Chú thích 2
-        lbl_leg2 = tk.Label(legend_frame, text="● Lộ trình tối ưu", fg="#f27024", bg="#f8fafc", font=("Segoe UI", 9, "bold"))
-        lbl_leg2.pack(side="left", padx=10)
+        lbl_src = tk.Label(ctrl_frame, text="Kho nguồn:", font=("Segoe UI", 9, "bold"), fg="#475569", bg="#f8fafc")
+        lbl_src.pack(side="left", padx=5)
+        
+        cb_src = ttk.Combobox(ctrl_frame, values=self.vertices, width=12, state="readonly")
+        cb_src.pack(side="left", padx=5)
+        
+        lbl_tgt = tk.Label(ctrl_frame, text="Kho đích:", font=("Segoe UI", 9, "bold"), fg="#475569", bg="#f8fafc")
+        lbl_tgt.pack(side="left", padx=5)
+        
+        cb_tgt = ttk.Combobox(ctrl_frame, values=self.vertices, width=12, state="readonly")
+        cb_tgt.pack(side="left", padx=5)
+        
+        # Thiết lập giá trị dropdown mặc định
+        if path and len(path) > 0:
+            cb_src.set(path[0])
+            cb_tgt.set(path[-1])
+        else:
+            if self.vertices:
+                cb_src.set(self.vertices[0])
+                cb_tgt.set(self.vertices[-1])
         
         # Canvas vẽ hình
         canvas = tk.Canvas(vis_win, bg="#ffffff", highlightthickness=1, highlightbackground="#cbd5e1")
-        canvas.pack(fill="both", expand=True, padx=20, pady=(10, 20))
+        canvas.pack(fill="both", expand=True, padx=20, pady=(5, 10))
+        
+        # Thêm thông tin tổng kết bên dưới canvas
+        info_frame = tk.Frame(vis_win, bg="#f8fafc")
+        info_frame.pack(fill="x", padx=20, pady=(0, 10))
+        
+        # Cấu trúc 2 hàng chữ Tiếng Việt
+        text_frame = tk.Frame(info_frame, bg="#f8fafc")
+        text_frame.pack(side="left", fill="y")
+        
+        lbl_route = tk.Label(
+            text_frame, 
+            text="Tuyến đường tối ưu: ...", 
+            font=("Segoe UI", 10, "bold"), 
+            fg="#0f172a", 
+            bg="#f8fafc"
+        )
+        lbl_route.pack(anchor="w")
+        
+        lbl_cost = tk.Label(
+            text_frame, 
+            text="Tổng chi phí vận chuyển: ...", 
+            font=("Segoe UI", 10, "bold"), 
+            fg="#10b981", 
+            bg="#f8fafc"
+        )
+        lbl_cost.pack(anchor="w", pady=(2, 0))
+        
+        # Chú thích màu sắc nhỏ gọn bên phải nhãn kết quả
+        legend_frame = tk.Frame(info_frame, bg="#f8fafc")
+        legend_frame.pack(side="right")
+        lbl_leg1 = tk.Label(legend_frame, text="● Kho hàng", fg="#64748b", bg="#f8fafc", font=("Segoe UI", 8, "bold"))
+        lbl_leg1.pack(side="left", padx=5)
+        lbl_leg2 = tk.Label(legend_frame, text="● Lộ trình tối ưu", fg="#f27024", bg="#f8fafc", font=("Segoe UI", 8, "bold"))
+        lbl_leg2.pack(side="left", padx=5)
         
         # Tính toán vị trí các đỉnh trên một vòng tròn lớn
         n = len(vertices)
-        if n == 0:
-            return
-            
         coords = {}
-        center_x, center_y = 350, 250
-        radius = 180
+        center_x, center_y = 350, 230  # Chỉnh lại center_y một chút vì cửa sổ cao hơn
+        radius = 170
         
         for i, node in enumerate(vertices):
             angle = i * (2 * math.pi / n)
@@ -343,37 +378,236 @@ class PolyShipApp:
             y = center_y + radius * math.sin(angle)
             coords[node] = (x, y)
             
-        # Tập hợp các cạnh thuộc lộ trình để highlight
-        highlight_set = set()
-        if path and len(path) > 1:
-            for i in range(len(path) - 1):
-                u, v = path[i], path[i+1]
-                highlight_set.add((u, v))
-                highlight_set.add((v, u))
-        elif highlight_edges:
-            for u, v, *rest in highlight_edges:
-                highlight_set.add((u, v))
-                highlight_set.add((v, u))
+        def draw_graph(path=None, cost=None):
+            canvas.delete("all")
+            
+            highlight_set = set()
+            if path and len(path) > 1:
+                for i in range(len(path) - 1):
+                    u, v = path[i], path[i+1]
+                    highlight_set.add((u, v))
+                    highlight_set.add((v, u))
+                    
+            # 1. Vẽ tất cả các cạnh trước
+            for u, v, c in edges:
+                if u in coords and v in coords:
+                    x1, y1 = coords[u]
+                    x2, y2 = coords[v]
+                    
+                    is_path_edge = (u, v) in highlight_set
+                    color = "#f27024" if is_path_edge else "#cbd5e1"
+                    width = 4 if is_path_edge else 1.5
+                    
+                    canvas.create_line(x1, y1, x2, y2, fill=color, width=width)
+                    
+                    mid_x = (x1 + x2) / 2
+                    mid_y = (y1 + y2) / 2
+                    
+                    canvas.create_rectangle(
+                        mid_x - 12, mid_y - 8, mid_x + 12, mid_y + 8,
+                        fill="#ffffff", outline=""
+                    )
+                    canvas.create_text(
+                        mid_x, mid_y, text=str(c), 
+                        font=("Segoe UI", 9, "bold"), fill="#0f172a"
+                    )
+                    
+            # 2. Vẽ các đỉnh
+            node_radius = 22
+            for node in vertices:
+                if node in coords:
+                    x, y = coords[node]
+                    
+                    is_in_path = False
+                    if path:
+                        is_in_path = node in path
+                                
+                    fill_color = "#f27024" if is_in_path else "#ffffff"
+                    outline_color = "#d95f1c" if is_in_path else "#475569"
+                    text_color = "#ffffff" if is_in_path else "#0f172a"
+                    width = 2.5 if is_in_path else 1.5
+                    
+                    canvas.create_oval(
+                        x - node_radius, y - node_radius, 
+                        x + node_radius, y + node_radius, 
+                        fill=fill_color, outline=outline_color, width=width
+                    )
+                    
+                    canvas.create_text(
+                        x, y, text=node, 
+                        font=("Segoe UI", 9, "bold"), fill=text_color
+                    )
+            
+            # Cập nhật nhãn bên dưới
+            if path:
+                path_str = " - ".join(path)
+                lbl_route.config(text=f"Tuyến đường tối ưu: {path_str}", fg="#0f172a")
+                if cost is not None:
+                    lbl_cost.config(text=f"Tổng chi phí vận chuyển: {cost}", fg="#10b981")
+                    lbl_cost.pack(anchor="w", pady=(2, 0))
+                else:
+                    lbl_cost.pack_forget()
+            else:
+                lbl_route.config(text="Không tìm thấy tuyến đường giữa hai điểm!", fg="#ef4444")
+                lbl_cost.pack_forget()
                 
-        # 1. Vẽ tất cả các cạnh trước (để các nút đè lên trên)
+        def run_routing_internal():
+            src = cb_src.get()
+            tgt = cb_tgt.get()
+            if not src or not tgt:
+                messagebox.showwarning("Cảnh báo", "Vui lòng chọn đầy đủ Kho nguồn và Kho đích!")
+                return
+            if src == tgt:
+                messagebox.showwarning("Cảnh báo", "Kho nguồn và Kho đích không được trùng nhau!")
+                return
+                
+            graph = routing.build_graph(edges)
+            cost, route = routing.shortest_route(graph, src, tgt)
+            
+            self.log_message(f"--- ĐỊNH TUYẾN TRỰC TIẾP TRÊN BẢN ĐỒ ---", "info")
+            self.log_message(f"Kho nguồn: {src} ➔ Kho đích: {tgt}", "info")
+            if cost == float('inf'):
+                self.log_message(f"Không tìm thấy tuyến đường giữa {src} và {tgt}!", "error")
+                draw_graph(None, None)
+            else:
+                route_format = " - ".join(route)
+                self.log_message(f"Optimal route: {route_format}: {cost}", "success")
+                self.log_message(f"Tuyến đường tối ưu: {route_format}: {cost}", "success")
+                self.play_sound("success")
+                draw_graph(route, cost)
+
+        btn_calc = tk.Button(ctrl_frame, text="🚀 Định Tuyến", bg="#f27024", fg="#ffffff", activebackground="#d95f1c", font=("Segoe UI", 9, "bold"), bd=0, padx=12, pady=2, cursor="hand2", command=run_routing_internal)
+        btn_calc.pack(side="left", padx=10)
+        
+        # Bắt sự kiện click trên Canvas để chọn điểm trực quan bằng cách nhấp chuột
+        selected_nodes = []
+        
+        def on_canvas_click(event):
+            clicked_node = None
+            for node, (x, y) in coords.items():
+                dist = math.sqrt((event.x - x)**2 + (event.y - y)**2)
+                if dist <= 22:
+                    clicked_node = node
+                    break
+            
+            if clicked_node:
+                if len(selected_nodes) == 0:
+                    selected_nodes.append(clicked_node)
+                    cb_src.set(clicked_node)
+                    self.log_message(f"Nhấp chọn Kho nguồn: {clicked_node}", "info")
+                    draw_graph([clicked_node], cost=0)
+                elif len(selected_nodes) == 1:
+                    src = selected_nodes[0]
+                    tgt = clicked_node
+                    if src == tgt:
+                        selected_nodes.clear()
+                        self.log_message("Hủy chọn kho hàng.", "info")
+                        draw_graph(None, None)
+                    else:
+                        selected_nodes.append(tgt)
+                        cb_tgt.set(tgt)
+                        self.log_message(f"Nhấp chọn Kho đích: {tgt}", "info")
+                        run_routing_internal()
+                        selected_nodes.clear()
+                        
+        canvas.bind("<Button-1>", on_canvas_click)
+        
+        # Vẽ đồ thị ban đầu
+        draw_graph(path, cost)
+
+    def visualize_mst(self, vertices, edges, mst_edges, total_cost):
+        """Hiển thị sơ đồ đồ thị mạng truyền dẫn tối thiểu MST Kruskal"""
+        import math
+        
+        # Tạo cửa sổ phụ
+        vis_win = tk.Toplevel(self.root)
+        vis_win.title("Đường truyền nội bộ tối ưu - MST Kruskal")
+        vis_win.geometry("700x620")
+        vis_win.configure(bg="#f8fafc")
+        vis_win.transient(self.root)
+        vis_win.grab_set()
+        
+        # Tiêu đề
+        lbl_title = tk.Label(
+            vis_win, 
+            text="SƠ ĐỒ ĐƯỜNG TRUYỀN NỘI BỘ TỐI ƯU GIỮA CÁC KHO (MST)", 
+            font=("Segoe UI", 11, "bold"), 
+            fg="#f27024", 
+            bg="#f8fafc"
+        )
+        lbl_title.pack(pady=(15, 5))
+        
+        # Canvas vẽ hình
+        canvas = tk.Canvas(vis_win, bg="#ffffff", highlightthickness=1, highlightbackground="#cbd5e1")
+        canvas.pack(fill="both", expand=True, padx=20, pady=(5, 10))
+        
+        # Thêm thông tin tổng kết bên dưới canvas
+        info_frame = tk.Frame(vis_win, bg="#f8fafc")
+        info_frame.pack(fill="x", padx=20, pady=(0, 15))
+        
+        # Cấu trúc 2 hàng chữ Tiếng Việt
+        text_frame = tk.Frame(info_frame, bg="#f8fafc")
+        text_frame.pack(side="left", fill="y")
+        
+        lbl_route = tk.Label(
+            text_frame, 
+            text="Mạng lưới truyền dẫn liên thông tối ưu (MST)", 
+            font=("Segoe UI", 10, "bold"), 
+            fg="#0f172a", 
+            bg="#f8fafc"
+        )
+        lbl_route.pack(anchor="w")
+        
+        lbl_cost = tk.Label(
+            text_frame, 
+            text=f"Tổng chi phí lắp đặt mạng: {total_cost}", 
+            font=("Segoe UI", 10, "bold"), 
+            fg="#10b981", 
+            bg="#f8fafc"
+        )
+        lbl_cost.pack(anchor="w", pady=(2, 0))
+        
+        # Chú thích màu sắc
+        legend_frame = tk.Frame(info_frame, bg="#f8fafc")
+        legend_frame.pack(side="right")
+        lbl_leg1 = tk.Label(legend_frame, text="● Kho hàng", fg="#64748b", bg="#f8fafc", font=("Segoe UI", 8, "bold"))
+        lbl_leg1.pack(side="left", padx=5)
+        lbl_leg2 = tk.Label(legend_frame, text="● Đường truyền MST", fg="#f27024", bg="#f8fafc", font=("Segoe UI", 8, "bold"))
+        lbl_leg2.pack(side="left", padx=5)
+        
+        # Tính toán vị trí các đỉnh trên một vòng tròn lớn
+        n = len(vertices)
+        coords = {}
+        center_x, center_y = 350, 240
+        radius = 170
+        
+        for i, node in enumerate(vertices):
+            angle = i * (2 * math.pi / n)
+            x = center_x + radius * math.cos(angle)
+            y = center_y + radius * math.sin(angle)
+            coords[node] = (x, y)
+            
+        # Tập hợp các cạnh thuộc MST
+        mst_set = set()
+        for u, v, c in mst_edges:
+            mst_set.add((u, v))
+            mst_set.add((v, u))
+            
+        # 1. Vẽ tất cả các cạnh trước
         for u, v, cost in edges:
             if u in coords and v in coords:
                 x1, y1 = coords[u]
                 x2, y2 = coords[v]
                 
-                # Kiểm tra cạnh có thuộc đường đi ngắn nhất không
-                is_path_edge = (u, v) in highlight_set
-                color = "#f27024" if is_path_edge else "#cbd5e1"
-                width = 4 if is_path_edge else 1.5
+                is_mst_edge = (u, v) in mst_set
+                color = "#f27024" if is_mst_edge else "#cbd5e1"
+                width = 4 if is_mst_edge else 1.5
                 
-                # Vẽ đường nối
                 canvas.create_line(x1, y1, x2, y2, fill=color, width=width)
                 
-                # Vẽ chi phí ở giữa cạnh
                 mid_x = (x1 + x2) / 2
                 mid_y = (y1 + y2) / 2
                 
-                # Tạo một nhãn nhỏ màu trắng dưới số chi phí để dễ nhìn
                 canvas.create_rectangle(
                     mid_x - 12, mid_y - 8, mid_x + 12, mid_y + 8,
                     fill="#ffffff", outline=""
@@ -389,57 +623,27 @@ class PolyShipApp:
             if node in coords:
                 x, y = coords[node]
                 
-                # Kiểm tra đỉnh có thuộc đường đi ngắn nhất không
-                is_in_path = False
-                if path:
-                    is_in_path = node in path
-                elif highlight_edges:
-                    for u, v, *rest in highlight_edges:
-                        if node == u or node == v:
-                            is_in_path = True
-                            break
-                            
-                fill_color = "#f27024" if is_in_path else "#ffffff"
-                outline_color = "#d95f1c" if is_in_path else "#475569"
-                text_color = "#ffffff" if is_in_path else "#0f172a"
-                width = 2.5 if is_in_path else 1.5
+                is_connected = False
+                for u, v, c in mst_edges:
+                    if node == u or node == v:
+                        is_connected = True
+                        break
+                        
+                fill_color = "#f27024" if is_connected else "#ffffff"
+                outline_color = "#d95f1c" if is_connected else "#475569"
+                text_color = "#ffffff" if is_connected else "#0f172a"
+                width = 2.5 if is_connected else 1.5
                 
-                # Vẽ hình tròn đỉnh
                 canvas.create_oval(
                     x - node_radius, y - node_radius, 
                     x + node_radius, y + node_radius, 
                     fill=fill_color, outline=outline_color, width=width
                 )
                 
-                # Vẽ nhãn tên kho hàng
                 canvas.create_text(
                     x, y, text=node, 
                     font=("Segoe UI", 9, "bold"), fill=text_color
                 )
-                
-        # Thêm thông tin tổng kết bên dưới canvas
-        info_frame = tk.Frame(vis_win, bg="#f8fafc")
-        info_frame.pack(fill="x", padx=20, pady=(0, 15))
-        
-        if path:
-            path_str = " ➔ ".join(path)
-            lbl_route = tk.Label(
-                info_frame, 
-                text=f"Lộ trình tối ưu: {path_str}", 
-                font=("Segoe UI", 10, "bold"), 
-                fg="#0f172a", 
-                bg="#f8fafc"
-            )
-            lbl_route.pack(anchor="w")
-        else:
-            lbl_route = tk.Label(
-                info_frame, 
-                text="Chưa có lộ trình nào được tìm thấy.", 
-                font=("Segoe UI", 10, "bold"), 
-                fg="#ef4444", 
-                bg="#f8fafc"
-            )
-            lbl_route.pack(anchor="w")
 
     def log_message(self, message, level="info"):
         """Ghi tin nhắn nhật ký kèm theo dấu thời gian thực tế và màu sắc phân cấp"""
@@ -449,15 +653,66 @@ class PolyShipApp:
         self.txt_log.see(tk.END)
         self.txt_log.config(state="disabled")
 
+    def load_orders_from_csv(self):
+        """Tải danh sách đơn hàng từ tệp CSV database"""
+        file_path = os.path.join(current_dir, "data_training", "don_hang_database.csv")
+        self.order_hash_table = hashing_tools.OrderHashTable(size=10)
+        
+        if os.path.exists(file_path):
+            try:
+                count = 0
+                with open(file_path, "r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line or line.startswith("#"):
+                            continue
+                        parts = line.split(",", 1)
+                        if len(parts) == 2:
+                            key, val = parts
+                            self.order_hash_table.insert(key.strip(), val.strip())
+                            count += 1
+                self.log_message(f"Tải thành công {count} đơn hàng từ cơ sở dữ liệu '{file_path}'.", "success")
+            except Exception as e:
+                self.log_message(f"Lỗi tải dữ liệu đơn hàng: {str(e)}. Đang khôi phục dữ liệu mẫu.", "error")
+                self.load_default_mock_orders()
+        else:
+            # Tạo sẵn thư mục nếu chưa có
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            self.load_default_mock_orders()
+            self.save_orders_to_csv()
+
+    def save_orders_to_csv(self):
+        """Lưu toàn bộ danh sách đơn hàng hiện tại trong bảng băm xuống tệp CSV database"""
+        file_path = os.path.join(current_dir, "data_training", "don_hang_database.csv")
+        try:
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            with open(file_path, "w", encoding="utf-8") as f:
+                # Ghi tiêu đề mô tả ngắn
+                f.write("# Cơ sở dữ liệu đơn hàng POLY-SHIP\n")
+                f.write("# Định dạng: Mã_đơn_hàng,Thông_tin_giao_hàng\n")
+                for i in range(self.order_hash_table.size):
+                    curr = self.order_hash_table.buckets[i]
+                    while curr:
+                        f.write(f"{curr.key},{curr.value}\n")
+                        curr = curr.next
+            self.log_message(f"Đã cập nhật cơ sở dữ liệu đơn hàng thành công.", "info")
+        except Exception as e:
+            self.log_message(f"Không thể lưu cơ sở dữ liệu đơn hàng: {str(e)}", "error")
+
+    def load_default_mock_orders(self):
+        """Nạp sẵn một số đơn hàng mẫu ban đầu để mô phỏng đụng độ băm"""
+        self.order_hash_table.insert("HD101", "Giao Hà Nội - Hỏa tốc 2h")
+        self.order_hash_table.insert("HD202", "Giao Đà Nẵng - Tiết kiệm")
+        self.order_hash_table.insert("HD303", "Giao Sài Gòn - Nhanh")
+        self.order_hash_table.insert("HD104", "Giao Hải Phòng - Tiêu chuẩn")
+        self.order_hash_table.insert("HD111", "Giao Hà Nội - Tiết kiệm")  # Trùng bucket với HD101
+        self.order_hash_table.insert("HD212", "Giao Huế - Nhanh")         # Trùng bucket với HD202
+
     def set_buttons_state(self, state):
         """Khóa hoặc mở khóa các nút bấm chính và reset text nguyên bản sạch sẽ"""
         for btn, text in self.btn_texts.items():
             if btn != self.btn_export:  # Nút xuất log luôn giữ nguyên trạng thái
                 btn.config(state=state, text=text)
-        if state == "disabled":
-            self.lbl_demo_link.config(fg="#cbd5e1", cursor="arrow")
-        else:
-            self.lbl_demo_link.config(fg="#f27024", cursor="hand2")
 
     def run_progress_simulation(self, status_msg, finish_msg, final_callback):
         """Bắt đầu mô phỏng thanh tiến trình chạy"""
@@ -484,7 +739,7 @@ class PolyShipApp:
             # Gọi hàm hiển thị kết quả
             final_callback()
 
-    # --- 1. DEMO DIJKSTRA ROUTING ---
+    # --- 1. DIJKSTRA ROUTING ---
     def show_input_dialog(self, title, fields, callback):
         """
         Hiển thị một cửa sổ nhập liệu nhỏ dạng modal.
@@ -510,9 +765,15 @@ class PolyShipApp:
             lbl = tk.Label(form_frame, text=label_text, font=("Segoe UI", 9, "bold"), fg="#475569", bg="#f8fafc")
             lbl.grid(row=idx, column=0, sticky="w", pady=5)
             
-            ent = tk.Entry(form_frame, font=("Segoe UI", 10), relief="solid", bd=1)
-            ent.insert(0, str(default_val))
-            ent.grid(row=idx, column=1, sticky="ew", padx=(10, 0), pady=5)
+            # Sử dụng Combobox cho các lựa chọn nguồn/đích nếu đã nạp dữ liệu đỉnh
+            if key in ["source", "target"] and self.vertices:
+                ent = ttk.Combobox(form_frame, font=("Segoe UI", 10), values=self.vertices, state="readonly")
+                ent.set(default_val if default_val in self.vertices else self.vertices[0] if key == "source" else self.vertices[-1])
+                ent.grid(row=idx, column=1, sticky="ew", padx=(10, 0), pady=5)
+            else:
+                ent = tk.Entry(form_frame, font=("Segoe UI", 10), relief="solid", bd=1)
+                ent.insert(0, str(default_val))
+                ent.grid(row=idx, column=1, sticky="ew", padx=(10, 0), pady=5)
             
             entries[key] = ent
             
@@ -540,120 +801,509 @@ class PolyShipApp:
         y = self.root.winfo_y() + (self.root.winfo_height() - dialog.winfo_height()) // 2
         dialog.geometry(f"+{x}+{y}")
 
-    # --- 1. DEMO DIJKSTRA ROUTING ---
-    def demo_routing(self):
-        """Chạy Định tuyến tìm đường đi ngắn nhất Dijkstra"""
-        if not self.edges:
-            messagebox.showwarning("Cảnh báo", "Chưa có dữ liệu bản đồ! Vui lòng nạp file CSV hoặc click 'Nạp nhanh dữ liệu cấu hình mẫu' trước.")
-            self.log_message("Cảnh báo: Chưa có dữ liệu bản đồ để thực hiện định tuyến.", "warning")
-            return
-            
-        default_src = self.vertices[0] if self.vertices else "WH1"
-        default_tgt = self.vertices[-1] if self.vertices else "HN"
+    # --- 1. DIJKSTRA ROUTING ---
+    def run_routing(self):
+        """Chạy Định tuyến tìm đường đi ngắn nhất Dijkstra sau khi nạp dữ liệu từ file"""
+        self.log_message("Yêu cầu chọn file dữ liệu bản đồ...", "info")
+        file_path = filedialog.askopenfilename(
+            title="Chọn file dữ liệu bản đồ (.txt / .csv) cho Định Tuyến",
+            filetypes=[("CSV files", "*.csv"), ("Text files", "*.txt"), ("All files", "*.*")]
+        )
         
-        def run_sim(results):
-            src = results["source"].strip()
-            tgt = results["target"].strip()
-            if not src or not tgt:
-                messagebox.showwarning("Cảnh báo", "Vui lòng nhập đầy đủ Kho nguồn và Kho đích!")
-                return
-            if src not in self.vertices or tgt not in self.vertices:
-                messagebox.showerror("Lỗi", f"Kho '{src}' hoặc '{tgt}' không tồn tại trong danh sách kho hiện tại!\nCác kho hợp lệ: {', '.join(self.vertices)}")
-                return
-                
-            def show_result():
-                graph = routing.build_graph(self.edges)
-                cost, route = routing.shortest_route(graph, src, tgt)
-                
-                self.log_message(f"--- KẾT QUẢ ĐỊNH TUYẾN DIJKSTRA ---", "info")
-                self.log_message(f"Kho nguồn: {src} ➔ Kho đích: {tgt}", "info")
-                if cost == float('inf'):
-                    self.log_message(f"Không tìm thấy tuyến đường giữa {src} và {tgt}!", "error")
-                    messagebox.showerror("Lỗi", f"Không tìm thấy tuyến đường giữa {src} và {tgt}!")
-                else:
-                    self.log_message(f"Tuyến đường tối ưu: {' ➔ '.join(route)}", "success")
-                    self.log_message(f"Tổng chi phí vận chuyển: {cost}", "success")
-                    # Hiển thị trực quan sơ đồ đồ thị mạng kho kèm đường đi ngắn nhất
-                    self.visualize_graph(self.vertices, self.edges, route)
-                    
-            self.run_progress_simulation(
-                status_msg=f"Đang tính toán tuyến đường ngắn nhất Dijkstra từ {src} đến {tgt}...",
-                finish_msg="Hoàn thành giải thuật Dijkstra.",
-                final_callback=show_result
-            )
+        def open_dialog():
+            default_src = self.vertices[0] if self.vertices else "WH1"
+            default_tgt = self.vertices[-1] if self.vertices else "HN"
             
-        self.show_input_dialog("Định Tuyến Dijkstra", [
-            ("Kho nguồn (Source):", "source", default_src),
-            ("Kho đích (Target):", "target", default_tgt)
-        ], run_sim)
+            graph = routing.build_graph(self.edges)
+            cost, route = routing.shortest_route(graph, default_src, default_tgt)
+            
+            self.log_message(f"--- KẾT QUẢ ĐỊNH TUYẾN DIJKSTRA BAN ĐẦU ---", "info")
+            if cost != float('inf'):
+                route_format = " - ".join(route)
+                self.log_message(f"Optimal route: {route_format}: {cost}", "success")
+                self.log_message(f"Tuyến đường tối ưu: {route_format}: {cost}", "success")
+            
+            # Hiển thị trực quan sơ đồ đồ thị mạng kho kèm đường đi ngắn nhất
+            self.visualize_graph(self.vertices, self.edges, route, cost=cost)
 
-    # --- 2. DEMO MST KRUSKAL ---
-    def demo_mst(self):
-        """Chạy giả lập Demo 2: Cây khung tối thiểu Kruskal"""
-        def run_sim(results):
-            nodes = results["nodes"]
-            if not nodes:
-                return
+        if file_path:
+            try:
+                if not os.path.exists(file_path):
+                    raise FileNotFoundError("Không tìm thấy file ở đường dẫn đã chọn.")
+                size = os.path.getsize(file_path)
+                if size == 0:
+                    raise ValueError("File dữ liệu trống (dung lượng 0 bytes).")
+                
+                filename = os.path.basename(file_path)
+                
+                def on_success():
+                    try:
+                        self.parse_csv_file(file_path)
+                        open_dialog()
+                    except Exception as e:
+                        messagebox.showerror("Lỗi phân tích", f"Không thể đọc file: {str(e)}")
+
+                self.run_progress_simulation(
+                    status_msg=f"Đang đọc dữ liệu từ file '{filename}'...",
+                    finish_msg=f"Nạp thành công file: {filename} ({size} bytes).",
+                    final_callback=on_success
+                )
+            except Exception as e:
+                self.log_message(f"Lỗi: {str(e)}", "error")
+                messagebox.showerror("Lỗi", str(e))
+        else:
+            # Nếu người dùng hủy chọn file, hỏi họ có muốn dùng dữ liệu mặc định không
+            confirm = messagebox.askyesno(
+                "Nạp Dữ Liệu Mặc Định",
+                "Bạn chưa chọn file dữ liệu bản đồ.\nBạn có muốn nạp nhanh dữ liệu cấu hình mặc định để tiếp tục định tuyến không?"
+            )
+            if confirm:
+                try:
+                    default_content = (
+                        "WH1,WH2,15\n"
+                        "WH1,HCM,22\n"
+                        "WH2,HCM,10\n"
+                        "WH2,DN,30\n"
+                        "HCM,DN,18\n"
+                        "HN,DN,25\n"
+                        "HN,HP,5\n"
+                        "HP,WH1,40\n"
+                    )
+                    # Đảm bảo thư mục data_training tồn tại
+                    os.makedirs(os.path.join(current_dir, "data_training"), exist_ok=True)
+                    file_path = os.path.join(current_dir, "data_training", "du_lieu_mau.csv")
+                    with open(file_path, "w", encoding="utf-8") as f:
+                        f.write(default_content)
+                    filename = os.path.join("data_training", "du_lieu_mau.csv")
+                    size = len(default_content.encode("utf-8"))
+                    
+                    def on_success_default():
+                        try:
+                            self.parse_csv_file(file_path)
+                            open_dialog()
+                        except Exception as e:
+                            messagebox.showerror("Lỗi phân tích", f"Lỗi đọc dữ liệu mặc định: {str(e)}")
+
+                    self.run_progress_simulation(
+                        status_msg=f"Đang phân tích dữ liệu cấu hình mặc định từ '{filename}'...",
+                        finish_msg=f"Tự tạo và nạp thành công file: {filename} ({size} bytes).",
+                        final_callback=on_success_default
+                    )
+                except Exception as e:
+                    self.log_message(f"Lỗi nạp dữ liệu mặc định: {str(e)}", "error")
+                    messagebox.showerror("Lỗi", f"Không thể nạp dữ liệu mặc định: {str(e)}")
+            else:
+                self.log_message("Hủy bỏ định tuyến do không chọn dữ liệu.", "warning")
+
+    # --- 2. MST KRUSKAL ---
+    def run_mst(self):
+        """Chạy tối ưu Cây khung tối thiểu Kruskal - Đường truyền nội bộ riêng giữa các kho"""
+        self.log_message("Yêu cầu chọn file dữ liệu bản đồ để làm MST...", "info")
+        file_path = filedialog.askopenfilename(
+            title="Chọn file dữ liệu bản đồ (.txt / .csv) cho MST",
+            filetypes=[("CSV files", "*.csv"), ("Text files", "*.txt"), ("All files", "*.*")]
+        )
+        
+        def compute_mst():
             def show_result():
-                msg = "Thuật toán thiết kế mạng kho tối thiểu Kruskal đã chạy thành công!"
-                self.log_message(msg, "success")
-                messagebox.showinfo("Demo Kruskal MST", msg)
+                try:
+                    mst_edges, total_cost = mst.kruskal_mst(self.vertices, self.edges)
+                    
+                    self.log_message(f"--- KẾT QUẢ ĐƯỜNG TRUYỀN NỘI BỘ TỐI ƯU MST ---", "info")
+                    for u, v, cost in mst_edges:
+                        self.log_message(f"  + Thiết lập đường truyền: {u} <-> {v} : Chi phí: {cost}", "success")
+                    self.log_message(f"Optimal network cost: {total_cost}", "success")
+                    self.log_message(f"Tổng chi phí mạng thiết lập tối thiểu: {total_cost}", "success")
+                    
+                    # Cảnh báo nếu đồ thị không liên thông
+                    if len(mst_edges) < len(self.vertices) - 1:
+                        self.log_message("Cảnh báo: Đồ thị không liên thông! Một số kho không kết nối được.", "warning")
+                        messagebox.showwarning("Cảnh báo", "Đồ thị không liên thông! Không thể kết nối tất cả các kho hàng.")
+                        
+                    # Hiển thị trực quan sơ đồ đồ thị mạng truyền dẫn tối thiểu
+                    self.visualize_mst(self.vertices, self.edges, mst_edges, total_cost)
+                except Exception as e:
+                    self.log_message(f"Lỗi tính toán MST: {str(e)}", "error")
+                    messagebox.showerror("Lỗi", f"Không thể tính toán MST: {str(e)}")
+
             self.run_progress_simulation(
-                status_msg="Đang chạy thuật toán Kruskal MST và cấu trúc Union-Find...",
+                status_msg="Đang tính toán mạng truyền dẫn tối thiểu Kruskal...",
                 finish_msg="Hoàn thành giải thuật Kruskal MST.",
                 final_callback=show_result
             )
-            
-        self.show_input_dialog("Mạng Kho Tối Thiểu MST", [
-            ("Danh sách Kho:", "nodes", "Kho_A, Kho_B, Kho_C, Kho_D")
-        ], run_sim)
 
-    # --- 3. DEMO HASH TABLE ---
-    def demo_hash_table(self):
-        """Chạy giả lập Demo 3: Tra cứu bảng băm đơn hàng dùng Separate Chaining"""
-        def run_sim(results):
-            act = results["action"].strip().lower()
-            oid = results["order_id"]
-            info = results["info"]
-            if act not in ["insert", "search", "delete"]:
-                messagebox.showwarning("Cảnh báo", "Hành động không hợp lệ! Vui lòng chỉ nhập 'Insert', 'Search' hoặc 'Delete'.")
-                return
-            if not oid:
-                return
+        if file_path:
+            try:
+                if not os.path.exists(file_path):
+                    raise FileNotFoundError("Không tìm thấy file ở đường dẫn đã chọn.")
+                size = os.path.getsize(file_path)
+                if size == 0:
+                    raise ValueError("File dữ liệu trống (dung lượng 0 bytes).")
+                
+                filename = os.path.basename(file_path)
+                
+                def on_success():
+                    try:
+                        self.parse_csv_file(file_path)
+                        compute_mst()
+                    except Exception as e:
+                        messagebox.showerror("Lỗi phân tích", f"Không thể đọc file: {str(e)}")
+
+                self.run_progress_simulation(
+                    status_msg=f"Đang đọc dữ liệu từ file '{filename}'...",
+                    finish_msg=f"Nạp thành công file: {filename} ({size} bytes).",
+                    final_callback=on_success
+                )
+            except Exception as e:
+                self.log_message(f"Lỗi: {str(e)}", "error")
+                messagebox.showerror("Lỗi", str(e))
+        else:
+            # Nếu người dùng hủy chọn file, hỏi họ có muốn dùng dữ liệu cấu hình mặc định không
+            confirm = messagebox.askyesno(
+                "Nạp Dữ Liệu Mặc Định",
+                "Bạn chưa chọn file dữ liệu bản đồ.\nBạn có muốn nạp nhanh dữ liệu cấu hình mặc định để tiếp tục MST không?"
+            )
+            if confirm:
+                try:
+                    default_content = (
+                        "WH1,WH2,15\n"
+                        "WH1,HCM,22\n"
+                        "WH2,HCM,10\n"
+                        "WH2,DN,30\n"
+                        "HCM,DN,18\n"
+                        "HN,DN,25\n"
+                        "HN,HP,5\n"
+                        "HP,WH1,40\n"
+                    )
+                    # Đảm bảo thư mục data_training tồn tại
+                    os.makedirs(os.path.join(current_dir, "data_training"), exist_ok=True)
+                    file_path = os.path.join(current_dir, "data_training", "du_lieu_mau.csv")
+                    with open(file_path, "w", encoding="utf-8") as f:
+                        f.write(default_content)
+                    filename = os.path.join("data_training", "du_lieu_mau.csv")
+                    size = len(default_content.encode("utf-8"))
+                    
+                    def on_success_default():
+                        try:
+                            self.parse_csv_file(file_path)
+                            compute_mst()
+                        except Exception as e:
+                            messagebox.showerror("Lỗi phân tích", f"Lỗi đọc dữ liệu mặc định: {str(e)}")
+
+                    self.run_progress_simulation(
+                        status_msg=f"Đang phân tích dữ liệu cấu hình mặc định từ '{filename}'...",
+                        finish_msg=f"Tự tạo và nạp thành công file: {filename} ({size} bytes).",
+                        final_callback=on_success_default
+                    )
+                except Exception as e:
+                    self.log_message(f"Lỗi nạp dữ liệu mặc định: {str(e)}", "error")
+                    messagebox.showerror("Lỗi", f"Không thể nạp dữ liệu mặc định: {str(e)}")
+            else:
+                self.log_message("Hủy bỏ MST do không chọn dữ liệu.", "warning")
+
+    # --- 3. HASH TABLE ---
+    def run_hash_table(self):
+        """Tra cứu bảng băm đơn hàng dùng Separate Chaining"""
+        # Tạo cửa sổ phụ trực quan hóa bảng băm
+        hash_win = tk.Toplevel(self.root)
+        hash_win.title("Tra cứu đơn hàng - Bảng băm Separate Chaining")
+        hash_win.geometry("740x560")
+        hash_win.configure(bg="#f8fafc")
+        hash_win.transient(self.root)
+        hash_win.grab_set()
+
+        # Tiêu đề chính
+        lbl_title = tk.Label(
+            hash_win, 
+            text="HỆ THỐNG TRA CỨU ĐƠN HÀNG (ORDER SEARCH)", 
+            font=("Segoe UI", 12, "bold"), 
+            fg="#f27024", 
+            bg="#f8fafc"
+        )
+        lbl_title.pack(pady=(15, 5))
+        
+        # Split layout: Trái (Controls), Phải (Cấu trúc bảng băm)
+        content_frame = tk.Frame(hash_win, bg="#f8fafc")
+        content_frame.pack(fill="both", expand=True, padx=15, pady=5)
+        
+        left_frame = tk.LabelFrame(content_frame, text=" Thao tác bảng băm ", font=("Segoe UI", 9, "bold"), fg="#475569", bg="#ffffff", padx=15, pady=15)
+        left_frame.pack(side="left", fill="both", expand=True, padx=(0, 10))
+        
+        right_frame = tk.LabelFrame(content_frame, text=" Cấu trúc 10 Buckets (Separate Chaining) ", font=("Segoe UI", 9, "bold"), fg="#475569", bg="#ffffff", padx=10, pady=10)
+        right_frame.pack(side="right", fill="both", expand=True)
+
+        # Left Frame: Nhập liệu
+        lbl_id = tk.Label(left_frame, text="Mã đơn hàng (Order ID):", font=("Segoe UI", 9, "bold"), fg="#475569", bg="#ffffff")
+        lbl_id.pack(anchor="w", pady=(0, 2))
+        
+        ent_id = tk.Entry(left_frame, font=("Segoe UI", 10), relief="solid", bd=1)
+        ent_id.insert(0, "HD101")
+        ent_id.pack(fill="x", pady=(0, 15))
+        
+        lbl_info = tk.Label(left_frame, text="Thông tin giao hàng (Order Info):", font=("Segoe UI", 9, "bold"), fg="#475569", bg="#ffffff")
+        lbl_info.pack(anchor="w", pady=(0, 2))
+        
+        ent_info = tk.Entry(left_frame, font=("Segoe UI", 10), relief="solid", bd=1)
+        ent_info.insert(0, "Giao Hà Nội - Hỏa tốc 2h")
+        ent_info.pack(fill="x", pady=(0, 20))
+        
+        # Nút Thao tác
+        btn_style_sub = {
+            "bg": "#f27024",
+            "fg": "#ffffff",
+            "activebackground": "#d95f1c",
+            "activeforeground": "#ffffff",
+            "relief": "flat",
+            "font": ("Segoe UI", 9, "bold"),
+            "bd": 0,
+            "cursor": "hand2",
+            "pady": 6
+        }
+        
+        btn_insert = tk.Button(left_frame, text="📥 Thêm/Cập Nhật (Insert)", **btn_style_sub)
+        btn_insert.pack(fill="x", pady=4)
+        
+        btn_search = tk.Button(left_frame, text="🔍 Tìm Kiếm Đơn Hàng (Search)", **btn_style_sub)
+        btn_search.pack(fill="x", pady=4)
+        
+        # Nút xóa có màu tối để dễ phân biệt
+        btn_delete_style = btn_style_sub.copy()
+        btn_delete_style["bg"] = "#ef4444"
+        btn_delete_style["activebackground"] = "#dc2626"
+        btn_remove = tk.Button(left_frame, text="🗑️ Xóa Đơn Hàng (Remove)", **btn_delete_style)
+        btn_remove.pack(fill="x", pady=4)
+        
+        # Nhãn hiển thị kết quả thao tác
+        lbl_result_title = tk.Label(left_frame, text="Kết quả hoạt động:", font=("Segoe UI", 9, "bold"), fg="#475569", bg="#ffffff")
+        lbl_result_title.pack(anchor="w", pady=(15, 2))
+        
+        lbl_result = tk.Label(
+            left_frame, 
+            text="Sẵn sàng thao tác.\nVui lòng nhập ID để bắt đầu.", 
+            font=("Segoe UI", 9, "italic"), 
+            fg="#64748b", 
+            bg="#f1f5f9", 
+            relief="solid", 
+            bd=1, 
+            padx=10, 
+            pady=10, 
+            justify="left",
+            anchor="nw",
+            height=5
+        )
+        lbl_result.pack(fill="both", expand=True)
+
+        # Right Frame: Hiển thị Buckets
+        txt_buckets = tk.Text(right_frame, bg="#ffffff", fg="#0f172a", relief="flat", font=("Consolas", 10))
+        txt_buckets.pack(side="left", fill="both", expand=True)
+        
+        scroll_buckets = tk.Scrollbar(right_frame, command=txt_buckets.yview)
+        scroll_buckets.pack(side="right", fill="y")
+        txt_buckets.config(yscrollcommand=scroll_buckets.set)
+        
+        # Cấu hình thẻ tag trong text box
+        txt_buckets.tag_config("normal", foreground="#0f172a")
+        txt_buckets.tag_config("highlight", foreground="#f27024", background="#fef3c7", font=("Consolas", 10, "bold"))
+        txt_buckets.tag_config("bucket_title", foreground="#475569", font=("Consolas", 10, "bold"))
+        txt_buckets.tag_config("chain_arrow", foreground="#10b981", font=("Consolas", 10, "bold"))
+        txt_buckets.tag_config("empty_bucket", foreground="#94a3b8", font=("Consolas", 10, "italic"))
+        
+        def refresh_bucket_view(highlight_idx=None):
+            txt_buckets.config(state="normal")
+            txt_buckets.delete("1.0", tk.END)
             
-            def show_result():
-                if act == "insert":
-                    msg = f"Thuật toán bảng băm: Chèn thành công đơn hàng '{oid}' ({info})!"
-                elif act == "search":
-                    msg = f"Thuật toán bảng băm: Tìm thấy đơn hàng '{oid}'!"
+            for i in range(self.order_hash_table.size):
+                curr = self.order_hash_table.buckets[i]
+                
+                txt_buckets.insert(tk.END, f"[Bucket {i}]: ", "bucket_title")
+                
+                if not curr:
+                    txt_buckets.insert(tk.END, "(Trống)\n", "empty_bucket")
                 else:
-                    msg = f"Thuật toán bảng băm: Đã xóa thành công đơn hàng '{oid}'!"
-                self.log_message(msg, "success")
-                messagebox.showinfo("Demo Hash Table đơn hàng", msg)
+                    while curr:
+                        node_str = f"{curr.key} ({curr.value})"
+                        if i == highlight_idx:
+                            txt_buckets.insert(tk.END, node_str, "highlight")
+                        else:
+                            txt_buckets.insert(tk.END, node_str, "normal")
+                            
+                        if curr.next:
+                            txt_buckets.insert(tk.END, " ➔ ", "chain_arrow")
+                        curr = curr.next
+                    txt_buckets.insert(tk.END, " ➔ (Hết)\n", "chain_arrow")
+            
+            txt_buckets.config(state="disabled")
+
+        # Cập nhật hiển thị ban đầu
+        refresh_bucket_view()
+        
+        # Thêm giải thích thuật toán ở dưới cùng cửa sổ
+        explain_frame = tk.Frame(hash_win, bg="#eff6ff", highlightthickness=1, highlightbackground="#bfdbfe", padx=10, pady=8)
+        explain_frame.pack(fill="x", padx=15, pady=(5, 15))
+        lbl_explain = tk.Label(
+            explain_frame,
+            text="💡 Giải thích: Hàm băm _hash(ID) = (tổng mã ASCII các ký tự * 31) % 10.\n"
+                 "Các đơn hàng có cùng mã băm sẽ được liên kết tại cùng một Bucket (Separate Chaining) giúp xử lý đụng độ tối ưu.",
+            font=("Segoe UI", 9, "italic"),
+            fg="#1e40af",
+            bg="#eff6ff",
+            justify="left"
+        )
+        lbl_explain.pack(anchor="w")
+
+        # Helper khóa/mở khóa nút bấm subwindow
+        def set_sub_buttons_state(state):
+            btn_insert.config(state=state)
+            btn_search.config(state=state)
+            btn_remove.config(state=state)
+            ent_id.config(state=state)
+            ent_info.config(state=state)
+
+        # Hàm xử lý chèn
+        def do_insert():
+            oid = ent_id.get().strip()
+            info = ent_info.get().strip()
+            if not oid:
+                messagebox.showwarning("Cảnh báo", "Vui lòng nhập Mã đơn hàng (Order ID)!")
+                return
+            if not info:
+                messagebox.showwarning("Cảnh báo", "Vui lòng nhập Thông tin giao hàng (Order Info)!")
+                return
+                
+            set_sub_buttons_state("disabled")
+            
+            def finish_insert():
+                is_new = self.order_hash_table.insert(oid, info)
+                idx = self.order_hash_table._hash(oid)
+                
+                # Cập nhật nhật ký chính và trạng thái
+                action_str = "thêm mới" if is_new else "cập nhật"
+                msg_log = f"Bảng băm: Đã {action_str} thành công đơn hàng '{oid}' vào Bucket {idx} : {info}"
+                self.log_message(msg_log, "success")
+                
+                # Lưu vào cơ sở dữ liệu CSV để lưu trữ lâu dài
+                self.save_orders_to_csv()
+                
+                # Cập nhật GUI
+                lbl_result.config(
+                    text=f"➔ Thao tác: INSERT\n➔ Mã băm (Bucket): {idx}\n➔ Trạng thái: Thành công\n➔ Kết quả: Đã {action_str} đơn hàng '{oid}'!", 
+                    fg="#10b981", 
+                    font=("Segoe UI", 9, "bold")
+                )
+                refresh_bucket_view(idx)
+                set_sub_buttons_state("normal")
                 
             self.run_progress_simulation(
-                status_msg=f"Đang thực thi bảng băm hành động '{results['action']}' cho '{oid}'...",
-                finish_msg="Hoàn thành thao tác bảng băm.",
-                final_callback=show_result
+                status_msg=f"Đang băm ID '{oid}' và chèn vào bảng băm...",
+                finish_msg=f"Hoàn thành thao tác chèn đơn hàng '{oid}'.",
+                final_callback=finish_insert
             )
-            
-        self.show_input_dialog("Bảng Băm Đơn Hàng", [
-            ("Hành động (Insert/Search/Delete):", "action", "Insert"),
-            ("Mã đơn hàng (Order ID):", "order_id", "HD23"),
-            ("Thông tin đơn hàng:", "info", "TP.HCM - 320k")
-        ], run_sim)
 
-    # --- 4. DEMO HASHING TỔNG HỢP ---
-    def demo_hashing_compound(self):
-        """Chạy giả lập Demo 4: Các bài toán Hashing tổng hợp"""
+        # Hàm xử lý tìm kiếm
+        def do_search():
+            oid = ent_id.get().strip()
+            if not oid:
+                messagebox.showwarning("Cảnh báo", "Vui lòng nhập Mã đơn hàng (Order ID) để tìm kiếm!")
+                return
+                
+            set_sub_buttons_state("disabled")
+            
+            def finish_search():
+                val = self.order_hash_table.get(oid)
+                idx = self.order_hash_table._hash(oid)
+                
+                if val:
+                    msg_log = f"Bảng băm: Tìm thấy đơn hàng '{oid}' tại Bucket {idx} : {val}"
+                    self.log_message(msg_log, "success")
+                    
+                    lbl_result.config(
+                        text=f"➔ Thao tác: SEARCH\n➔ Mã băm (Bucket): {idx}\n➔ Trạng thái: Tìm thấy!\n➔ Chi tiết: {val}", 
+                        fg="#10b981", 
+                        font=("Segoe UI", 9, "bold")
+                    )
+                    refresh_bucket_view(idx)
+                else:
+                    msg_log = f"Bảng băm: Không tìm thấy đơn hàng '{oid}' trong hệ thống"
+                    self.log_message(msg_log, "warning")
+                    self.play_sound("warning")
+                    
+                    lbl_result.config(
+                        text=f"➔ Thao tác: SEARCH\n➔ Trạng thái: Không tìm thấy!\n➔ Mô tả: Đơn hàng '{oid}' không tồn tại.", 
+                        fg="#ef4444", 
+                        font=("Segoe UI", 9, "bold")
+                    )
+                    refresh_bucket_view()
+                    
+                set_sub_buttons_state("normal")
+                
+            self.run_progress_simulation(
+                status_msg=f"Đang băm ID '{oid}' và tìm kiếm trong bảng băm...",
+                finish_msg=f"Hoàn thành tìm kiếm đơn hàng '{oid}'.",
+                final_callback=finish_search
+            )
+
+        # Hàm xử lý xóa
+        def do_remove():
+            oid = ent_id.get().strip()
+            if not oid:
+                messagebox.showwarning("Cảnh báo", "Vui lòng nhập Mã đơn hàng (Order ID) để xóa!")
+                return
+                
+            set_sub_buttons_state("disabled")
+            
+            def finish_remove():
+                idx = self.order_hash_table._hash(oid)
+                success = self.order_hash_table.remove(oid)
+                
+                if success:
+                    msg_log = f"Bảng băm: Đã xóa thành công đơn hàng '{oid}' khỏi Bucket {idx}"
+                    self.log_message(msg_log, "success")
+                    
+                    # Lưu vào cơ sở dữ liệu CSV để đồng bộ dữ liệu
+                    self.save_orders_to_csv()
+                    
+                    lbl_result.config(
+                        text=f"➔ Thao tác: REMOVE\n➔ Mã băm (Bucket): {idx}\n➔ Trạng thái: Thành công\n➔ Kết quả: Đã xóa đơn '{oid}' khỏi Bucket {idx}.", 
+                        fg="#10b981", 
+                        font=("Segoe UI", 9, "bold")
+                    )
+                    refresh_bucket_view(idx)
+                else:
+                    msg_log = f"Bảng băm: Không tìm thấy đơn hàng '{oid}' để xóa"
+                    self.log_message(msg_log, "warning")
+                    self.play_sound("warning")
+                    
+                    lbl_result.config(
+                        text=f"➔ Thao tác: REMOVE\n➔ Trạng thái: Thất bại!\n➔ Mô tả: Đơn hàng '{oid}' không tồn tại để xóa.", 
+                        fg="#ef4444", 
+                        font=("Segoe UI", 9, "bold")
+                    )
+                    refresh_bucket_view()
+                    
+                set_sub_buttons_state("normal")
+                
+            self.run_progress_simulation(
+                status_msg=f"Đang băm ID '{oid}' và tiến hành xóa khỏi bảng băm...",
+                finish_msg=f"Hoàn thành thao tác xóa đơn hàng '{oid}'.",
+                final_callback=finish_remove
+            )
+
+        # Cấu hình command cho các nút
+        btn_insert.config(command=do_insert)
+        btn_search.config(command=do_search)
+        btn_remove.config(command=do_remove)
+
+    # --- 4. HASHING TỔNG HỢP ---
+    def run_hashing_compound(self):
+        """Các bài toán Hashing tổng hợp"""
         def run_sim(results):
             def show_result():
                 msg = "Các thuật toán Hashing tổng hợp đã chạy thành công!"
                 self.log_message(msg, "success")
-                messagebox.showinfo("Demo Hashing tổng hợp", msg)
+                messagebox.showinfo("Hashing tổng hợp", msg)
             self.run_progress_simulation(
                 status_msg="Đang tính toán các bài toán Anagram, Streak và Subarray Sum bằng hash...",
-                finish_msg="Hoàn thành demo Hashing tổng hợp.",
+                finish_msg="Hoàn thành Hashing tổng hợp.",
                 final_callback=show_result
             )
             
@@ -664,9 +1314,9 @@ class PolyShipApp:
             ("Mục tiêu K:", "k", "-10")
         ], run_sim)
 
-    # --- 5. DEMO ROLLING HASH ---
-    def demo_rolling_hash(self):
-        """Chạy giả lập Demo 5: Tìm pattern log bằng Rabin-Karp Rolling Hash"""
+    # --- 5. ROLLING HASH ---
+    def run_rolling_hash(self):
+        """Tìm pattern log bằng Rabin-Karp Rolling Hash"""
         def run_sim(results):
             txt = results["text"]
             pat = results["pattern"]
@@ -675,10 +1325,10 @@ class PolyShipApp:
             def show_result():
                 msg = f"Thuật toán tìm kiếm Rolling Hash Rabin-Karp cho từ khóa '{pat}' đã chạy thành công!"
                 self.log_message(msg, "success")
-                messagebox.showinfo("Demo Rolling Hash", msg)
+                messagebox.showinfo("Rolling Hash", msg)
             self.run_progress_simulation(
                 status_msg=f"Đang băm trượt Rabin-Karp tìm '{pat}' trên tệp logs...",
-                finish_msg="Hoàn thành demo Rolling Hash.",
+                finish_msg="Hoàn thành Rolling Hash.",
                 final_callback=show_result
             )
             
@@ -687,9 +1337,9 @@ class PolyShipApp:
             ("Pattern cần tìm:", "pattern", "SAVE10")
         ], run_sim)
 
-    # --- 6. DEMO DP CO BAN ---
-    def demo_dp_basics(self):
-        """Chạy giả lập Demo 6: Quy hoạch động cơ bản"""
+    # --- 6. DP CO BAN ---
+    def run_dp_basics(self):
+        """Quy hoạch động cơ bản"""
         def run_sim(results):
             n_str = results["n"]
             try:
@@ -700,10 +1350,10 @@ class PolyShipApp:
             def show_result():
                 msg = f"Thuật toán Quy hoạch động cơ bản với N={n} đã chạy thành công!"
                 self.log_message(msg, "success")
-                messagebox.showinfo("Demo DP Cơ Bản", msg)
+                messagebox.showinfo("Quy hoạch động cơ bản", msg)
             self.run_progress_simulation(
                 status_msg=f"Đang lập bảng quy hoạch động tính toán Fibonacci & Climbing Stairs với N={n}...",
-                finish_msg="Hoàn thành demo DP cơ bản.",
+                finish_msg="Hoàn thành DP cơ bản.",
                 final_callback=show_result
             )
             
@@ -711,9 +1361,9 @@ class PolyShipApp:
             ("Tham số N:", "n", "10")
         ], run_sim)
 
-    # --- 7. DEMO COMBO KNAPSACK ---
-    def demo_combo_knapsack(self):
-        """Chạy giả lập Demo 7: Combo khuyến mãi cái túi 0/1"""
+    # --- 7. COMBO KNAPSACK ---
+    def run_combo_knapsack(self):
+        """Combo khuyến mãi cái túi 0/1"""
         def run_sim(results):
             b_str = results["b"]
             try:
@@ -724,10 +1374,10 @@ class PolyShipApp:
             def show_result():
                 msg = f"Thuật toán Quy hoạch động cái túi (Knapsack 0/1) với ngân sách B={b} đã chạy thành công!"
                 self.log_message(msg, "success")
-                messagebox.showinfo("Demo Combo Knapsack", msg)
+                messagebox.showinfo("Combo Knapsack 0/1", msg)
             self.run_progress_simulation(
                 status_msg=f"Đang thiết lập bảng quy hoạch động cái túi Knapsack với ngân sách B={b}...",
-                finish_msg="Hoàn thành demo combo tối ưu Knapsack.",
+                finish_msg="Hoàn thành tối ưu Knapsack.",
                 final_callback=show_result
             )
             
@@ -793,8 +1443,8 @@ class PolyShipApp:
             "- Lớp: ITA107\n"
             "- Môn học: Cấu trúc dữ liệu và giải thuật (ITA107)\n\n"
             "=== HƯỚNG DẪN SỬ DỤNG ===\n"
-            "1. Nhấn các nút Demo thuật toán từ 1 đến 7 để chạy giả lập từng trường hợp thực tế.\n"
-            "2. Hệ thống sẽ khóa các nút, chạy thanh tiến trình giả lập, phát âm báo và hiển thị chi tiết thuật toán.\n"
+            "1. Nhấn các nút chức năng từ 1 đến 7 để chạy tính toán từng trường hợp thực tế.\n"
+            "2. Hệ thống sẽ khóa các nút, chạy thanh tiến trình tính toán, phát âm báo và hiển thị kết quả.\n"
             "3. Ô nhật ký Console lưu trữ toàn bộ các bước chạy để dễ dàng theo dõi và xuất file báo cáo.\n"
         )
         messagebox.showinfo("Thông tin & Hướng dẫn", info_message)
@@ -829,15 +1479,15 @@ class PolyShipApp:
             self.log_message(f"Lỗi khi xuất nhật ký: {str(e)}", "error")
             messagebox.showerror("Lỗi hệ thống", f"Không thể xuất nhật ký ra file: {str(e)}")
 
-    def load_demo_data(self):
-        """Tự động tạo tệp tin dữ liệu mẫu du_lieu_mau.csv và nạp nhanh vào ứng dụng"""
-        if self.btn_demo1.cget("state") == "disabled":
+    def load_default_data(self):
+        """Tự động tạo tệp tin dữ liệu mặc định du_lieu_mau.csv và nạp nhanh vào ứng dụng"""
+        if self.btn_routing.cget("state") == "disabled":
             return
         
-        self.log_message("Yêu cầu nạp nhanh dữ liệu cấu hình mẫu...", "info")
+        self.log_message("Yêu cầu nạp nhanh dữ liệu cấu hình mặc định...", "info")
         try:
-            # Tạo dữ liệu mẫu phù hợp với format CSV (u,v,cost)
-            demo_content = (
+            # Tạo dữ liệu mặc định phù hợp với format CSV (u,v,cost)
+            default_content = (
                 "WH1,WH2,15\n"
                 "WH1,HCM,22\n"
                 "WH2,HCM,10\n"
@@ -850,27 +1500,27 @@ class PolyShipApp:
             
             file_path = os.path.join(current_dir, "du_lieu_mau.csv")
             with open(file_path, "w", encoding="utf-8") as f:
-                f.write(demo_content)
+                f.write(default_content)
                 
             filename = "du_lieu_mau.csv"
-            size = len(demo_content.encode("utf-8"))
+            size = len(default_content.encode("utf-8"))
             
             def on_success():
                 try:
                     self.parse_csv_file(file_path)
-                    messagebox.showinfo("Thành công", f"Đã tự động tạo và nạp thành công dữ liệu mẫu:\n{file_path}\n(Dung lượng: {size} bytes)")
+                    messagebox.showinfo("Thành công", f"Đã tự động tạo và nạp thành công dữ liệu mặc định:\n{file_path}\n(Dung lượng: {size} bytes)")
                 except Exception as e:
-                    messagebox.showerror("Lỗi phân tích", f"Lỗi đọc dữ liệu mẫu: {str(e)}")
+                    messagebox.showerror("Lỗi phân tích", f"Lỗi đọc dữ liệu mặc định: {str(e)}")
                 
-            # Chạy hiệu ứng thanh tiến trình giả lập
+            # Chạy hiệu ứng thanh tiến trình xử lý
             self.run_progress_simulation(
-                status_msg=f"Đang phân tích dữ liệu mẫu từ '{filename}'...",
+                status_msg=f"Đang phân tích dữ liệu cấu hình mặc định từ '{filename}'...",
                 finish_msg=f"Tự tạo và nạp thành công file: {filename} ({size} bytes).",
                 final_callback=on_success
             )
         except Exception as e:
-            self.log_message(f"Lỗi nạp dữ liệu mẫu: {str(e)}", "error")
-            messagebox.showerror("Lỗi dữ liệu mẫu", f"Không thể nạp dữ liệu mẫu: {str(e)}")
+            self.log_message(f"Lỗi nạp dữ liệu mặc định: {str(e)}", "error")
+            messagebox.showerror("Lỗi dữ liệu mặc định", f"Không thể nạp dữ liệu mặc định: {str(e)}")
 
     def play_sound(self, sound_type="success"):
         """Phát âm thanh cảnh báo hệ thống Windows (natively)"""

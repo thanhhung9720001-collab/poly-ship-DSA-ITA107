@@ -75,6 +75,14 @@ def shortest_route(graph, source, target):
     return dist[target], route
 
 if __name__ == "__main__":
+    import sys
+    # Đảm bảo console in ra Tiếng Việt Unicode không bị lỗi trên Windows
+    if sys.stdout.encoding != 'utf-8':
+        try:
+            sys.stdout.reconfigure(encoding='utf-8')
+        except AttributeError:
+            pass
+
     # Chạy thử nghiệm nhỏ độc lập để kiểm tra
     SAMPLE_EDGES = [
         ("WH1", "WH2", 15),
