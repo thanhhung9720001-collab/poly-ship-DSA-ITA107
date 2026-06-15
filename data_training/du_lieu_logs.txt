@@ -1,0 +1,6 @@
+2026-06-15 14:00:01 INFO  [system] Poly-Ship main server initialized successfully.
+2026-06-15 14:02:11 WARN  [payment] Transaction timeout for coupon AVES10. Retrying...
+2026-06-15 14:05:32 INFO  [routing] Shortest path computed from DN to HCM. Cost: 28.
+2026-06-15 14:10:15 DEBUG [hashing] Collision resolved for order key HD111 at Bucket 3.
+2026-06-15 14:15:22 ERROR [coupon] Validation failed for code SAVE10. Process aborted.
+2026-06-15 14:20:00 INFO  [database] Orders database auto-saved to don_hang_database.csv.

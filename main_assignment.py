@@ -6,6 +6,10 @@ from datetime import datetime
 import routing
 import mst
 import hashing_tools
+import anagrams
+import consecutive_days
+import subarray_sum
+import rolling_hash
 
 # Đảm bảo Python có thể tìm thấy các file cùng thư mục
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -1073,6 +1077,13 @@ class PolyShipApp:
         btn_remove = tk.Button(left_frame, text="🗑️ Xóa Đơn Hàng (Remove)", **btn_delete_style)
         btn_remove.pack(fill="x", pady=4)
         
+        # Nút nạp CSDL từ file
+        btn_style_file = btn_style_sub.copy()
+        btn_style_file["bg"] = "#475569"
+        btn_style_file["activebackground"] = "#334155"
+        btn_load = tk.Button(left_frame, text="📁 Nạp CSDL từ File (.csv)", **btn_style_file)
+        btn_load.pack(fill="x", pady=4)
+        
         # Nhãn hiển thị kết quả thao tác
         lbl_result_title = tk.Label(left_frame, text="Kết quả hoạt động:", font=("Segoe UI", 9, "bold"), fg="#475569", bg="#ffffff")
         lbl_result_title.pack(anchor="w", pady=(15, 2))
@@ -1156,6 +1167,7 @@ class PolyShipApp:
             btn_insert.config(state=state)
             btn_search.config(state=state)
             btn_remove.config(state=state)
+            btn_load.config(state=state)
             ent_id.config(state=state)
             ent_info.config(state=state)
 
@@ -1288,55 +1300,549 @@ class PolyShipApp:
                 final_callback=finish_remove
             )
 
+        # Hàm xử lý nạp file
+        def do_load_file():
+            file_path = filedialog.askopenfilename(
+                title="Chọn file dữ liệu đơn hàng bổ sung",
+                filetypes=[("CSV files", "*.csv"), ("Text files", "*.txt"), ("All files", "*.*")]
+            )
+            if not file_path:
+                return
+                
+            set_sub_buttons_state("disabled")
+            
+            def finish_load():
+                try:
+                    count = 0
+                    dup_or_update_count = 0
+                    with open(file_path, "r", encoding="utf-8") as f:
+                        for line in f:
+                            line = line.strip()
+                            if not line or line.startswith("#"):
+                                continue
+                            parts = line.split(",", 1)
+                            if len(parts) == 2:
+                                key, val = parts
+                                is_new = self.order_hash_table.insert(key.strip(), val.strip())
+                                if is_new:
+                                    count += 1
+                                else:
+                                    dup_or_update_count += 1
+                    
+                    filename = os.path.basename(file_path)
+                    if count > 0 or dup_or_update_count > 0:
+                        self.save_orders_to_csv()
+                        msg_log = f"Bảng băm: Nạp thành công {count} đơn mới, cập nhật {dup_or_update_count} đơn từ {filename}."
+                        self.log_message(msg_log, "success")
+                        
+                        lbl_result.config(
+                            text=f"➔ Thao tác: LOAD FILE\n➔ Nguồn: {filename}\n➔ Trạng thái: Thành công\n➔ Đã thêm: {count} đơn mới\n➔ Đã cập nhật: {dup_or_update_count} đơn hàng.",
+                            fg="#10b981",
+                            font=("Segoe UI", 9, "bold")
+                        )
+                    else:
+                        lbl_result.config(
+                            text=f"➔ Thao tác: LOAD FILE\n➔ Trạng thái: Không tìm thấy dữ liệu hợp lệ trong file.",
+                            fg="#ef4444",
+                            font=("Segoe UI", 9, "bold")
+                        )
+                        
+                    refresh_bucket_view()
+                except Exception as e:
+                    self.log_message(f"Lỗi nạp file đơn hàng: {str(e)}", "error")
+                    messagebox.showerror("Lỗi", f"Không thể nạp dữ liệu: {str(e)}")
+                    
+                set_sub_buttons_state("normal")
+                
+            self.run_progress_simulation(
+                status_msg="Đang đọc file và đồng bộ với bảng băm...",
+                finish_msg="Hoàn thành nạp dữ liệu bổ sung.",
+                final_callback=finish_load
+            )
+
         # Cấu hình command cho các nút
         btn_insert.config(command=do_insert)
         btn_search.config(command=do_search)
         btn_remove.config(command=do_remove)
+        btn_load.config(command=do_load_file)
 
     # --- 4. HASHING TỔNG HỢP ---
     def run_hashing_compound(self):
         """Các bài toán Hashing tổng hợp"""
-        def run_sim(results):
-            def show_result():
-                msg = "Các thuật toán Hashing tổng hợp đã chạy thành công!"
-                self.log_message(msg, "success")
-                messagebox.showinfo("Hashing tổng hợp", msg)
-            self.run_progress_simulation(
-                status_msg="Đang tính toán các bài toán Anagram, Streak và Subarray Sum bằng hash...",
-                finish_msg="Hoàn thành Hashing tổng hợp.",
-                final_callback=show_result
-            )
-            
-        self.show_input_dialog("Hashing Tổng Hợp", [
-            ("Danh sách mã Coupon:", "coupons", "SAVE10, AVES10, SALE5, LASE5, EVAS10"),
-            ("Danh sách ngày giao hàng:", "days", "100, 4, 200, 1, 3, 2, 5"),
-            ("Doanh thu tích lũy:", "revenues", "10, 2, -2, -20, 10"),
-            ("Mục tiêu K:", "k", "-10")
-        ], run_sim)
+        # Tạo cửa sổ phụ Dashboard
+        comp_win = tk.Toplevel(self.root)
+        comp_win.title("Dashboard Hashing Tổng Hợp - Phân tích & Gợi ý")
+        comp_win.geometry("780x640")
+        comp_win.configure(bg="#f8fafc")
+        comp_win.transient(self.root)
+        comp_win.grab_set()
 
+        # Tiêu đề chính
+        lbl_title = tk.Label(
+            comp_win, 
+            text="HỆ THỐNG PHÂN TÍCH HASHING TỔNG HỢP", 
+            font=("Segoe UI", 12, "bold"), 
+            fg="#f27024", 
+            bg="#f8fafc"
+        )
+        lbl_title.pack(pady=(15, 5))
+        
+        # Chia đôi cột: Trái (Điều khiển/Nhập liệu theo chức năng con), Phải (Báo cáo trực quan)
+        content_frame = tk.Frame(comp_win, bg="#f8fafc")
+        content_frame.pack(fill="both", expand=True, padx=15, pady=5)
+        
+        left_frame = tk.Frame(content_frame, bg="#f8fafc")
+        left_frame.pack(side="left", fill="both", expand=True, padx=(0, 10))
+        
+        right_frame = tk.LabelFrame(content_frame, text=" Báo cáo kết quả giải thuật trực quan ", font=("Segoe UI", 9, "bold"), fg="#475569", bg="#ffffff", padx=10, pady=10)
+        right_frame.pack(side="right", fill="both", expand=True)
+
+        # Cấu hình khung báo cáo kết quả (Cột Phải)
+        txt_report = tk.Text(right_frame, bg="#ffffff", fg="#0f172a", relief="flat", font=("Segoe UI", 10), wrap="word")
+        txt_report.pack(side="left", fill="both", expand=True)
+        
+        scroll = tk.Scrollbar(right_frame, command=txt_report.yview)
+        scroll.pack(side="right", fill="y")
+        txt_report.config(yscrollcommand=scroll.set)
+        
+        # Định nghĩa các tags màu sắc cho báo cáo
+        txt_report.tag_config("section", foreground="#f27024", font=("Segoe UI", 11, "bold"))
+        txt_report.tag_config("bold", font=("Segoe UI", 10, "bold"), foreground="#0f172a")
+        txt_report.tag_config("result", font=("Segoe UI", 10, "bold"), foreground="#10b981")
+        txt_report.tag_config("italic", font=("Segoe UI", 9, "italic"), foreground="#475569")
+        txt_report.tag_config("explain", font=("Segoe UI", 9, "italic"), foreground="#1e40af")
+        
+        # In lời chào ban đầu
+        txt_report.insert(tk.END, "Vui lòng chọn nạp dữ liệu hoặc nhấn chạy giải thuật ở cột bên trái để bắt đầu báo cáo kết quả...", "italic")
+        txt_report.config(state="disabled")
+
+        # Style nút bấm phẳng hiện đại
+        btn_style_sub = {
+            "bg": "#f27024",
+            "fg": "#ffffff",
+            "activebackground": "#d95f1c",
+            "activeforeground": "#ffffff",
+            "relief": "flat",
+            "font": ("Segoe UI", 9, "bold"),
+            "bd": 0,
+            "cursor": "hand2",
+            "pady": 4
+        }
+        btn_style_file = btn_style_sub.copy()
+        btn_style_file["bg"] = "#475569"
+        btn_style_file["activebackground"] = "#334155"
+
+        # --- PHÂN VÙNG 1: ANAGRAMS (Nhóm Coupon đối xứng) ---
+        frame_anagram = tk.LabelFrame(left_frame, text=" 🏷️ 1. Nhóm Coupon Anagrams ", font=("Segoe UI", 9, "bold"), fg="#475569", bg="#ffffff", padx=10, pady=8)
+        frame_anagram.pack(fill="x", pady=(0, 10))
+        
+        lbl_coup = tk.Label(frame_anagram, text="Mã giảm giá (ngăn cách bởi dấu phẩy):", font=("Segoe UI", 8, "bold"), fg="#64748b", bg="#ffffff")
+        lbl_coup.pack(anchor="w", pady=(0, 2))
+        
+        ent_coupons = tk.Entry(frame_anagram, font=("Segoe UI", 9), relief="solid", bd=1)
+        ent_coupons.insert(0, "SAVE10, AVES10, SALE5, LASE5, EVAS10")
+        ent_coupons.pack(fill="x", pady=(0, 8))
+        
+        btn_box1 = tk.Frame(frame_anagram, bg="#ffffff")
+        btn_box1.pack(fill="x")
+        
+        # --- PHÂN VÙNG 2: CONSECUTIVE DAYS (Streak liên tiếp) ---
+        frame_streak = tk.LabelFrame(left_frame, text=" 📈 2. Chuỗi Ngày Giao Liên Tiếp ", font=("Segoe UI", 9, "bold"), fg="#475569", bg="#ffffff", padx=10, pady=8)
+        frame_streak.pack(fill="x", pady=(0, 10))
+        
+        lbl_days = tk.Label(frame_streak, text="Danh sách các ngày (ngăn cách bởi dấu phẩy):", font=("Segoe UI", 8, "bold"), fg="#64748b", bg="#ffffff")
+        lbl_days.pack(anchor="w", pady=(0, 2))
+        
+        ent_days = tk.Entry(frame_streak, font=("Segoe UI", 9), relief="solid", bd=1)
+        ent_days.insert(0, "100, 4, 200, 1, 3, 2, 5")
+        ent_days.pack(fill="x", pady=(0, 8))
+        
+        btn_box2 = tk.Frame(frame_streak, bg="#ffffff")
+        btn_box2.pack(fill="x")
+
+        # --- PHÂN VÙNG 3: SUBARRAY SUM = K (Khoảng đạt mục tiêu) ---
+        frame_sub = tk.LabelFrame(left_frame, text=" 💰 3. Khoảng Doanh Thu Đạt Mục Tiêu ", font=("Segoe UI", 9, "bold"), fg="#475569", bg="#ffffff", padx=10, pady=8)
+        frame_sub.pack(fill="x", pady=(0, 10))
+        
+        lbl_rev = tk.Label(frame_sub, text="Doanh thu hàng ngày (dấu phẩy):", font=("Segoe UI", 8, "bold"), fg="#64748b", bg="#ffffff")
+        lbl_rev.pack(anchor="w", pady=(0, 2))
+        
+        ent_revenues = tk.Entry(frame_sub, font=("Segoe UI", 9), relief="solid", bd=1)
+        ent_revenues.insert(0, "10, 2, -2, -20, 10")
+        ent_revenues.pack(fill="x", pady=(0, 6))
+        
+        k_frame = tk.Frame(frame_sub, bg="#ffffff")
+        k_frame.pack(fill="x", pady=(0, 8))
+        lbl_k = tk.Label(k_frame, text="Doanh thu mục tiêu K:", font=("Segoe UI", 8, "bold"), fg="#64748b", bg="#ffffff")
+        lbl_k.pack(side="left")
+        ent_k = tk.Entry(k_frame, font=("Segoe UI", 9), width=8, relief="solid", bd=1)
+        ent_k.insert(0, "-10")
+        ent_k.pack(side="left", padx=10)
+        
+        btn_box3 = tk.Frame(frame_sub, bg="#ffffff")
+        btn_box3.pack(fill="x")
+
+        # --- Helper khóa/mở khóa nút bấm subwindow ---
+        def set_sub_buttons_state(state):
+            for f_btn in [btn_file1, btn_run1, btn_file2, btn_run2, btn_file3, btn_run3]:
+                f_btn.config(state=state)
+            ent_coupons.config(state=state)
+            ent_days.config(state=state)
+            ent_revenues.config(state=state)
+            ent_k.config(state=state)
+
+        # --- Callback Nạp File của từng bài toán ---
+        def load_file_generic(entry_widget, file_type_desc):
+            file_path = filedialog.askopenfilename(
+                title=f"Chọn file dữ liệu {file_type_desc}",
+                filetypes=[("CSV files", "*.csv"), ("Text files", "*.txt"), ("All files", "*.*")]
+            )
+            if file_path:
+                try:
+                    with open(file_path, "r", encoding="utf-8") as f:
+                        content = f.read().strip()
+                    # Làm sạch nội dung (ví dụ loại bỏ các ký tự xuống dòng bằng dấu phẩy)
+                    cleaned_content = ", ".join(line.strip() for line in content.split("\n") if line.strip())
+                    
+                    entry_widget.config(state="normal")
+                    entry_widget.delete(0, tk.END)
+                    entry_widget.insert(0, cleaned_content)
+                    
+                    filename = os.path.basename(file_path)
+                    self.log_message(f"Nạp thành công file {filename} cho ô {file_type_desc}.", "success")
+                except Exception as e:
+                    messagebox.showerror("Lỗi đọc file", f"Không thể đọc tệp dữ liệu: {str(e)}")
+
+        # --- Hàm thực thi từng bài toán ---
+        def execute_anagrams():
+            coupons_list = [c.strip() for c in ent_coupons.get().split(",") if c.strip()]
+            if not coupons_list:
+                messagebox.showwarning("Cảnh báo", "Vui lòng nhập danh sách coupon hợp lệ!")
+                return
+                
+            set_sub_buttons_state("disabled")
+            
+            def run_anagram_algo():
+                groups = anagrams.group_coupon_anagrams(coupons_list)
+                self.log_message(f"Chạy thành công bài toán Coupon Anagrams: {groups}", "success")
+                
+                txt_report.config(state="normal")
+                txt_report.delete("1.0", tk.END)
+                
+                txt_report.insert(tk.END, "🏷️ KẾT QUẢ: NHÓM MÃ COUPON ĐỐI XỨNG (ANAGRAMS)\n", "section")
+                txt_report.insert(tk.END, f"  - Mã đầu vào: {', '.join(coupons_list)}\n\n")
+                txt_report.insert(tk.END, "  - Kết quả gom nhóm:\n", "bold")
+                
+                for idx, gp in enumerate(groups):
+                    txt_report.insert(tk.END, f"    + Nhóm {idx + 1}: ", "bold")
+                    txt_report.insert(tk.END, f"{' ➔ '.join(gp)}\n", "result")
+                    
+                txt_report.insert(tk.END, "\n  💡 Giải thích giải thuật: Sử dụng Bảng băm (Hash Map), sắp xếp các chữ cái của mã giảm giá làm Key chung để gom các mã đối xứng (Anagrams) vào cùng nhóm trong độ phức tạp O(M * N log N).\n", "explain")
+                txt_report.config(state="disabled")
+                set_sub_buttons_state("normal")
+                
+            self.run_progress_simulation(
+                status_msg="Đang tính toán nhóm mã giảm giá đối xứng...",
+                finish_msg="Hoàn thành thuật toán Coupon Anagrams.",
+                final_callback=run_anagram_algo
+            )
+
+        def execute_streak():
+            days_str = ent_days.get()
+            days_list = []
+            for d in days_str.split(","):
+                d = d.strip()
+                if d:
+                    try:
+                        days_list.append(int(d))
+                    except ValueError:
+                        pass
+            if not days_list:
+                messagebox.showwarning("Cảnh báo", "Vui lòng nhập chuỗi ngày giao hàng hợp lệ!")
+                return
+                
+            set_sub_buttons_state("disabled")
+            
+            def run_streak_algo():
+                max_streak = consecutive_days.longest_consecutive_days(days_list)
+                self.log_message(f"Chạy thành công bài toán ngày liên tiếp: {max_streak} ngày", "success")
+                
+                txt_report.config(state="normal")
+                txt_report.delete("1.0", tk.END)
+                
+                txt_report.insert(tk.END, "📈 KẾT QUẢ: CHUỖI NGÀY GIAO HÀNG LIÊN TIẾP DÀI NHẤT\n", "section")
+                txt_report.insert(tk.END, f"  - Danh sách ngày: {sorted(days_list)}\n\n")
+                txt_report.insert(tk.END, "  - Chuỗi ngày liên tiếp dài nhất: ", "bold")
+                
+                # Tìm chuỗi cụ thể để biểu diễn trực quan
+                day_set = set(days_list)
+                longest_streak = []
+                for day in day_set:
+                    if day - 1 not in day_set:
+                        curr = day
+                        streak = [curr]
+                        while curr + 1 in day_set:
+                            curr += 1
+                            streak.append(curr)
+                        if len(streak) > len(longest_streak):
+                            longest_streak = streak
+                            
+                txt_report.insert(tk.END, f"{max_streak} ngày ", "result")
+                txt_report.insert(tk.END, f"(Hành trình liên tục: {' ➔ '.join(map(str, longest_streak))})\n\n", "bold")
+                txt_report.insert(tk.END, "  💡 Giải thích giải thuật: Đưa tất cả ngày vào một Bảng băm (HashSet). Duyệt tìm điểm bắt đầu của chuỗi (ngày X mà X-1 không có trong set) và đếm độ dài liên tục. Độ phức tạp tuyến tính O(N) cực kỳ tối ưu.\n", "explain")
+                txt_report.config(state="disabled")
+                set_sub_buttons_state("normal")
+                
+            self.run_progress_simulation(
+                status_msg="Đang quét tính toán chuỗi ngày giao hàng liên tiếp...",
+                finish_msg="Hoàn thành thuật toán Longest Streak.",
+                final_callback=run_streak_algo
+            )
+
+        def execute_subarray():
+            rev_str = ent_revenues.get()
+            k_str = ent_k.get().strip()
+            
+            revenues_list = []
+            for r in rev_str.split(","):
+                r = r.strip()
+                if r:
+                    try:
+                        revenues_list.append(float(r) if '.' in r else int(r))
+                    except ValueError:
+                        pass
+            try:
+                k_val = float(k_str) if '.' in k_str else int(k_str)
+            except ValueError:
+                messagebox.showerror("Lỗi nhập liệu", "Mục tiêu K phải là một số hợp lệ!")
+                return
+                
+            if not revenues_list:
+                messagebox.showwarning("Cảnh báo", "Vui lòng nhập chuỗi doanh thu hợp lệ!")
+                return
+                
+            set_sub_buttons_state("disabled")
+            
+            def run_subarray_algo():
+                count_windows = subarray_sum.count_revenue_windows(revenues_list, k_val)
+                self.log_message(f"Chạy thành công bài toán Subarray Sum = K: {count_windows} khoảng", "success")
+                
+                txt_report.config(state="normal")
+                txt_report.delete("1.0", tk.END)
+                
+                txt_report.insert(tk.END, "💰 KẾT QUẢ: KHOẢNG DOANH THU ĐẠT MỤC TIÊU (SUBARRAY SUM = K)\n", "section")
+                txt_report.insert(tk.END, f"  - Lịch trình doanh thu: {revenues_list}\n")
+                txt_report.insert(tk.END, f"  - Doanh thu mục tiêu K: {k_val}\n\n")
+                txt_report.insert(tk.END, f"  - Số khoảng doanh thu đạt mục tiêu: ", "bold")
+                txt_report.insert(tk.END, f"{count_windows} khoảng\n\n", "result")
+                
+                # Truy vết chi tiết các khoảng doanh thu
+                matching_segments = []
+                n_rev = len(revenues_list)
+                for start in range(n_rev):
+                    curr_sum = 0
+                    for end in range(start, n_rev):
+                        curr_sum += revenues_list[end]
+                        if curr_sum == k_val:
+                            segment_values = revenues_list[start:end+1]
+                            segment_indices = f"Ngày {start+1} ➔ {end+1}"
+                            matching_segments.append(f"[{segment_indices}]: Tổng {segment_values} = {k_val}")
+                
+                if matching_segments:
+                    txt_report.insert(tk.END, "  - Chi tiết các chặng trùng khớp tìm được:\n", "bold")
+                    for seg in matching_segments:
+                        txt_report.insert(tk.END, f"    + {seg}\n", "italic")
+                else:
+                    txt_report.insert(tk.END, "  - Không tìm thấy chặng con nào có tổng doanh thu bằng K.\n\n", "italic")
+                    
+                txt_report.insert(tk.END, "\n  💡 Giải thích giải thuật: Sử dụng Bảng băm lưu trữ các tổng tích lũy (Prefix Sum) và tần suất của chúng. Với mỗi tổng tích lũy Current_Sum, kiểm tra xem (Current_Sum - K) đã xuất hiện trước đó chưa để tính số chặng đạt mục tiêu trong độ phức tạp O(N).\n", "explain")
+                txt_report.config(state="disabled")
+                set_sub_buttons_state("normal")
+                
+            self.run_progress_simulation(
+                status_msg=f"Đang tìm các khoảng liên tục có tổng bằng {k_val}...",
+                finish_msg="Hoàn thành thuật toán Subarray Sum.",
+                final_callback=run_subarray_algo
+            )
+
+        # Gắn các nút bấm vào khung
+        btn_file1 = tk.Button(btn_box1, text="📁 Nạp Coupon từ File", **btn_style_file, command=lambda: load_file_generic(ent_coupons, "Coupon"))
+        btn_file1.pack(side="left", fill="x", expand=True, padx=(0, 5))
+        btn_run1 = tk.Button(btn_box1, text="🚀 Nhóm Anagrams", **btn_style_sub, command=execute_anagrams)
+        btn_run1.pack(side="right", fill="x", expand=True, padx=(5, 0))
+
+        btn_file2 = tk.Button(btn_box2, text="📁 Nạp Ngày từ File", **btn_style_file, command=lambda: load_file_generic(ent_days, "Ngày"))
+        btn_file2.pack(side="left", fill="x", expand=True, padx=(0, 5))
+        btn_run2 = tk.Button(btn_box2, text="🚀 Tìm Streak", **btn_style_sub, command=execute_streak)
+        btn_run2.pack(side="right", fill="x", expand=True, padx=(5, 0))
+
+        btn_file3 = tk.Button(btn_box3, text="📁 Nạp Doanh thu từ File", **btn_style_file, command=lambda: load_file_generic(ent_revenues, "Doanh Thu"))
+        btn_file3.pack(side="left", fill="x", expand=True, padx=(0, 5))
+        btn_run3 = tk.Button(btn_box3, text="🚀 Đếm chặng", **btn_style_sub, command=execute_subarray)
+        btn_run3.pack(side="right", fill="x", expand=True, padx=(5, 0))
     # --- 5. ROLLING HASH ---
     def run_rolling_hash(self):
         """Tìm pattern log bằng Rabin-Karp Rolling Hash"""
-        def run_sim(results):
-            txt = results["text"]
-            pat = results["pattern"]
-            if not txt or not pat:
-                return
-            def show_result():
-                msg = f"Thuật toán tìm kiếm Rolling Hash Rabin-Karp cho từ khóa '{pat}' đã chạy thành công!"
-                self.log_message(msg, "success")
-                messagebox.showinfo("Rolling Hash", msg)
-            self.run_progress_simulation(
-                status_msg=f"Đang băm trượt Rabin-Karp tìm '{pat}' trên tệp logs...",
-                finish_msg="Hoàn thành Rolling Hash.",
-                final_callback=show_result
-            )
-            
-        self.show_input_dialog("Rabin-Karp Rolling Hash", [
-            ("Văn bản Logs (Text):", "text", "SYSTEM_LOG_WARN_AVES10_LOG_SAVE10_PROCESS_ERROR"),
-            ("Pattern cần tìm:", "pattern", "SAVE10")
-        ], run_sim)
+        # Tạo cửa sổ phụ
+        rk_win = tk.Toplevel(self.root)
+        rk_win.title("Tìm kiếm chuỗi bằng Rabin-Karp (Rolling Hash)")
+        rk_win.geometry("780x600")
+        rk_win.configure(bg="#f8fafc")
+        rk_win.transient(self.root)
+        rk_win.grab_set()
 
+        # Tiêu đề
+        lbl_title = tk.Label(
+            rk_win, 
+            text="HỆ THỐNG TÌM KIẾM LOGS RABIN-KARP", 
+            font=("Segoe UI", 12, "bold"), 
+            fg="#f27024", 
+            bg="#f8fafc"
+        )
+        lbl_title.pack(pady=(15, 5))
+
+        # Split layout: Trái (Điều khiển / Nhập liệu), Phải (Báo cáo trực quan)
+        content_frame = tk.Frame(rk_win, bg="#f8fafc")
+        content_frame.pack(fill="both", expand=True, padx=15, pady=5)
+
+        left_frame = tk.LabelFrame(content_frame, text=" Cấu hình tìm kiếm ", font=("Segoe UI", 9, "bold"), fg="#475569", bg="#ffffff", padx=15, pady=15)
+        left_frame.pack(side="left", fill="both", expand=True, padx=(0, 10))
+
+        right_frame = tk.LabelFrame(content_frame, text=" Kết quả tìm kiếm trực quan ", font=("Segoe UI", 9, "bold"), fg="#475569", bg="#ffffff", padx=10, pady=10)
+        right_frame.pack(side="right", fill="both", expand=True)
+
+        # Cột trái: Text Area nhập logs, nút nạp file, ô nhập pattern
+        lbl_log = tk.Label(left_frame, text="Văn bản Logs (hoặc nạp từ File):", font=("Segoe UI", 9, "bold"), fg="#475569", bg="#ffffff")
+        lbl_log.pack(anchor="w", pady=(0, 2))
+
+        txt_logs = tk.Text(left_frame, font=("Segoe UI", 9), relief="solid", bd=1, height=12, wrap="word")
+        txt_logs.insert("1.0", "SYSTEM_LOG_WARN_AVES10_LOG_SAVE10_PROCESS_ERROR")
+        txt_logs.pack(fill="both", expand=True, pady=(0, 8))
+
+        # Khung chứa nút nạp file
+        btn_style_sub = {
+            "bg": "#f27024",
+            "fg": "#ffffff",
+            "activebackground": "#d95f1c",
+            "activeforeground": "#ffffff",
+            "relief": "flat",
+            "font": ("Segoe UI", 9, "bold"),
+            "bd": 0,
+            "cursor": "hand2",
+            "pady": 5
+        }
+        btn_style_file = btn_style_sub.copy()
+        btn_style_file["bg"] = "#475569"
+        btn_style_file["activebackground"] = "#334155"
+
+        def load_log_file():
+            file_path = filedialog.askopenfilename(
+                title="Chọn file logs (.txt, .log, .csv)",
+                filetypes=[("Text files", "*.txt;*.log"), ("CSV files", "*.csv"), ("All files", "*.*")]
+            )
+            if file_path:
+                try:
+                    with open(file_path, "r", encoding="utf-8") as f:
+                        content_data = f.read()
+                    txt_logs.delete("1.0", tk.END)
+                    txt_logs.insert("1.0", content_data)
+                    filename = os.path.basename(file_path)
+                    self.log_message(f"Nạp thành công {len(content_data)} ký tự log từ file {filename}.", "success")
+                except Exception as e:
+                    messagebox.showerror("Lỗi", f"Không thể đọc file logs: {str(e)}")
+
+        btn_load_file = tk.Button(left_frame, text="📁 Nạp Logs từ File (.txt/.log)", **btn_style_file, command=load_log_file)
+        btn_load_file.pack(fill="x", pady=(0, 15))
+
+        lbl_pat = tk.Label(left_frame, text="Từ khóa cần tìm (Pattern):", font=("Segoe UI", 9, "bold"), fg="#475569", bg="#ffffff")
+        lbl_pat.pack(anchor="w", pady=(0, 2))
+
+        ent_pattern = tk.Entry(left_frame, font=("Segoe UI", 10), relief="solid", bd=1)
+        ent_pattern.insert(0, "SAVE10")
+        ent_pattern.pack(fill="x", pady=(0, 15))
+
+        # Cột phải: Báo cáo
+        txt_report = tk.Text(right_frame, bg="#ffffff", fg="#0f172a", relief="flat", font=("Segoe UI", 10), wrap="word")
+        txt_report.pack(side="left", fill="both", expand=True)
+
+        scroll = tk.Scrollbar(right_frame, command=txt_report.yview)
+        scroll.pack(side="right", fill="y")
+        txt_report.config(yscrollcommand=scroll.set)
+
+        txt_report.tag_config("section", foreground="#f27024", font=("Segoe UI", 11, "bold"))
+        txt_report.tag_config("bold", font=("Segoe UI", 10, "bold"), foreground="#0f172a")
+        txt_report.tag_config("match", font=("Segoe UI", 10, "bold"), foreground="#ef4444", background="#fef3c7")
+        txt_report.tag_config("success", font=("Segoe UI", 10, "bold"), foreground="#10b981")
+        txt_report.tag_config("explain", font=("Segoe UI", 9, "italic"), foreground="#1e40af")
+
+        txt_report.insert(tk.END, "Vui lòng nhập văn bản hoặc nạp file logs bên trái, nhập từ khóa và nhấn nút chạy tìm kiếm...", "italic")
+        txt_report.config(state="disabled")
+
+        def set_sub_buttons_state(state):
+            btn_load_file.config(state=state)
+            btn_run.config(state=state)
+            ent_pattern.config(state=state)
+            txt_logs.config(state=state)
+
+        def execute_search():
+            txt = txt_logs.get("1.0", tk.END)
+            # Giữ nguyên xuống dòng của file log nhưng trim khoảng trắng thừa đầu cuối
+            txt = txt.rstrip('\r\n').rstrip('\n')
+            pat = ent_pattern.get().strip()
+
+            if not txt.strip():
+                messagebox.showwarning("Cảnh báo", "Vui lòng nhập hoặc nạp văn bản logs!")
+                return
+            if not pat:
+                messagebox.showwarning("Cảnh báo", "Vui lòng nhập từ khóa cần tìm!")
+                return
+
+            set_sub_buttons_state("disabled")
+
+            def run_search():
+                indices = rolling_hash.rolling_hash_search(txt, pat)
+                self.log_message(f"Quét Rabin-Karp hoàn tất. Tìm thấy {len(indices)} kết quả khớp với '{pat}'.", "success")
+
+                txt_report.config(state="normal")
+                txt_report.delete("1.0", tk.END)
+
+                txt_report.insert(tk.END, "🔍 KẾT QUẢ TÌM KIẾM RABIN-KARP\n", "section")
+                txt_report.insert(tk.END, f"  - Từ khóa cần tìm: '{pat}'\n")
+                txt_report.insert(tk.END, f"  - Số lượng khớp: {len(indices)} vị trí\n\n", "bold")
+
+                if indices:
+                    txt_report.insert(tk.END, "  - Vị trí các chỉ số (0-indexed):\n", "bold")
+                    txt_report.insert(tk.END, f"    ➔ {', '.join(map(str, indices))}\n\n", "success")
+
+                    txt_report.insert(tk.END, "  - Minh họa các vị trí khớp trong log:\n", "bold")
+                    
+                    text_len = len(txt)
+                    if text_len < 2000:
+                        last_idx = 0
+                        for start_idx in indices:
+                            txt_report.insert(tk.END, txt[last_idx:start_idx])
+                            txt_report.insert(tk.END, txt[start_idx:start_idx + len(pat)], "match")
+                            last_idx = start_idx + len(pat)
+                        txt_report.insert(tk.END, txt[last_idx:])
+                        txt_report.insert(tk.END, "\n\n")
+                    else:
+                        txt_report.insert(tk.END, f"    (Văn bản quá dài ({text_len} ký tự), chỉ hiển thị chỉ số để tối ưu hiệu năng. Vui lòng xem kết quả chi tiết ở danh sách vị trí trên.)\n\n", "italic")
+                else:
+                    txt_report.insert(tk.END, "  ➔ Không tìm thấy từ khóa nào trùng khớp trong logs.\n\n", "bold")
+
+                txt_report.insert(tk.END, "💡 Giải thích giải thuật: Giải thuật Rabin-Karp sử dụng Rolling Hash để tính mã băm cho chuỗi mẫu độ dài M và trượt liên tục trên văn bản độ dài N. Tại mỗi bước dịch chuyển, việc tính toán mã băm mới dựa trên mã băm cũ chỉ mất O(1) nhờ tận dụng phép toán hiệu của phần tử đi ra và cộng phần tử đi vào. Độ phức tạp trung bình là O(N + M).\n", "explain")
+                txt_report.config(state="disabled")
+                set_sub_buttons_state("normal")
+
+            self.run_progress_simulation(
+                status_msg=f"Đang băm trượt Rabin-Karp tìm kiếm '{pat}'...",
+                finish_msg="Hoàn thành thuật toán Rabin-Karp.",
+                final_callback=run_search
+            )
+
+        btn_run = tk.Button(left_frame, text="🚀 Tìm kiếm Rabin-Karp", **btn_style_sub, command=execute_search)
+        btn_run.pack(fill="x", pady=5)
+    
     # --- 6. DP CO BAN ---
     def run_dp_basics(self):
         """Quy hoạch động cơ bản"""
