@@ -10,6 +10,7 @@ import anagrams
 import consecutive_days
 import subarray_sum
 import rolling_hash
+import promo_optimizer
 
 # Đảm bảo Python có thể tìm thấy các file cùng thư mục
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -1846,51 +1847,406 @@ class PolyShipApp:
     # --- 6. DP CO BAN ---
     def run_dp_basics(self):
         """Quy hoạch động cơ bản"""
-        def run_sim(results):
-            n_str = results["n"]
+        # Tạo cửa sổ phụ
+        dp_win = tk.Toplevel(self.root)
+        dp_win.title("Quy Hoạch Đồng Cơ Bản (Fibonacci & Climbing Stairs)")
+        dp_win.geometry("780x600")
+        dp_win.configure(bg="#f8fafc")
+        dp_win.transient(self.root)
+        dp_win.grab_set()
+
+        # Tiêu đề
+        lbl_title = tk.Label(
+            dp_win, 
+            text="HỆ THỐNG TRỰC QUAN QUY HOẠCH ĐỘNG CƠ BẢN", 
+            font=("Segoe UI", 12, "bold"), 
+            fg="#f27024", 
+            bg="#f8fafc"
+        )
+        lbl_title.pack(pady=(15, 5))
+
+        # Split layout: Trái (Nhập liệu), Phải (Báo cáo trực quan)
+        content_frame = tk.Frame(dp_win, bg="#f8fafc")
+        content_frame.pack(fill="both", expand=True, padx=15, pady=5)
+
+        left_frame = tk.LabelFrame(content_frame, text=" Cấu hình tham số ", font=("Segoe UI", 9, "bold"), fg="#475569", bg="#ffffff", padx=15, pady=15)
+        left_frame.pack(side="left", fill="both", expand=True, padx=(0, 10))
+
+        right_frame = tk.LabelFrame(content_frame, text=" Kết quả trực quan giải thuật ", font=("Segoe UI", 9, "bold"), fg="#475569", bg="#ffffff", padx=10, pady=10)
+        right_frame.pack(side="right", fill="both", expand=True)
+
+        # Cột trái
+        lbl_n = tk.Label(left_frame, text="Nhập số nguyên N (1-35):", font=("Segoe UI", 9, "bold"), fg="#475569", bg="#ffffff")
+        lbl_n.pack(anchor="w", pady=(0, 5))
+
+        ent_n = tk.Entry(left_frame, font=("Segoe UI", 10), relief="solid", bd=1)
+        ent_n.insert(0, "10")
+        ent_n.pack(fill="x", pady=(0, 15))
+
+        # Nút Chạy
+        btn_style_sub = {
+            "bg": "#f27024",
+            "fg": "#ffffff",
+            "activebackground": "#d95f1c",
+            "activeforeground": "#ffffff",
+            "relief": "flat",
+            "font": ("Segoe UI", 9, "bold"),
+            "bd": 0,
+            "cursor": "hand2",
+            "pady": 5
+        }
+
+        # Cột phải: Báo cáo
+        txt_report = tk.Text(right_frame, bg="#ffffff", fg="#0f172a", relief="flat", font=("Segoe UI", 10), wrap="word")
+        txt_report.pack(side="left", fill="both", expand=True)
+
+        scroll = tk.Scrollbar(right_frame, command=txt_report.yview)
+        scroll.pack(side="right", fill="y")
+        txt_report.config(yscrollcommand=scroll.set)
+
+        txt_report.tag_config("section", foreground="#f27024", font=("Segoe UI", 11, "bold"))
+        txt_report.tag_config("bold", font=("Segoe UI", 10, "bold"), foreground="#0f172a")
+        txt_report.tag_config("result", font=("Segoe UI", 10, "bold"), foreground="#10b981")
+        txt_report.tag_config("explain", font=("Segoe UI", 9, "italic"), foreground="#1e40af")
+
+        txt_report.insert(tk.END, "Vui lòng nhập tham số N bên trái và nhấn nút chạy để bắt đầu báo cáo kết quả...", "italic")
+        txt_report.config(state="disabled")
+
+        def execute_dp():
+            n_str = ent_n.get().strip()
             try:
                 n = int(n_str)
-            except ValueError:
-                messagebox.showerror("Lỗi nhập liệu", "N phải là số nguyên!")
+                if n < 1 or n > 35:
+                    raise ValueError("N phải nằm trong khoảng [1, 35]")
+            except ValueError as e:
+                messagebox.showerror("Lỗi nhập liệu", f"N phải là số nguyên nằm trong khoảng [1, 35] để đảm bảo hiển thị đẹp mắt!\nChi tiết: {str(e)}")
                 return
-            def show_result():
-                msg = f"Thuật toán Quy hoạch động cơ bản với N={n} đã chạy thành công!"
-                self.log_message(msg, "success")
-                messagebox.showinfo("Quy hoạch động cơ bản", msg)
+
+            ent_n.config(state="disabled")
+            btn_run.config(state="disabled")
+
+            def run_dp_algo():
+                fib_val, fib_steps = promo_optimizer.fib_tab(n)
+                stairs_val, stairs_steps = promo_optimizer.climb_stairs(n)
+                
+                self.log_message(f"Quy hoạch động: Fib({n})={fib_val}, Stairs({n})={stairs_val}", "success")
+
+                txt_report.config(state="normal")
+                txt_report.delete("1.0", tk.END)
+
+                # --- 1. FIBONACCI ---
+                txt_report.insert(tk.END, f"🪜 1. BÀI TOÁN SỐ FIBONACCI THỨ {n}\n", "section")
+                txt_report.insert(tk.END, f"  - Kết quả Fibonacci({n}): ", "bold")
+                txt_report.insert(tk.END, f"{fib_val}\n", "result")
+                txt_report.insert(tk.END, "  - Từng bước tính toán (Tabulation Bottom-up):\n", "bold")
+                for step in fib_steps:
+                    txt_report.insert(tk.END, f"    ➔ {step}\n")
+                
+                txt_report.insert(tk.END, "\n💡 Thuyết minh thuật toán:\n", "bold")
+                txt_report.insert(tk.END, "  • Công thức truy hồi: F(i) = F(i-1) + F(i-2).\n"
+                                          "  • Giải thuật dùng một mảng lưu kết quả từ dưới lên (F(0), F(1) cho đến F(N)).\n"
+                                          "  • Độ phức tạp thời gian: O(N) (tối ưu hơn đệ quy thường rất nhiều), độ phức tạp không gian: O(N).\n\n", "explain")
+
+                # --- 2. CLIMBING STAIRS ---
+                txt_report.insert(tk.END, f"🏃 2. BÀI TOÁN LEO BẬC THANG (CLIMBING STAIRS) N = {n}\n", "section")
+                txt_report.insert(tk.END, f"  - Số cách để leo hết {n} bậc thang: ", "bold")
+                txt_report.insert(tk.END, f"{stairs_val} cách\n", "result")
+                txt_report.insert(tk.END, "  - Chi tiết các bước chuyển trạng thái (State Transition):\n", "bold")
+                for step in stairs_steps:
+                    txt_report.insert(tk.END, f"    ➔ {step}\n")
+
+                txt_report.insert(tk.END, "\n💡 Thuyết minh thuật toán:\n", "bold")
+                txt_report.insert(tk.END, "  • Để lên đến bậc N, ta chỉ có 2 cách: Đi 1 bước từ bậc N-1, hoặc đi 2 bước từ bậc N-2.\n"
+                                          "  • Do đó, số cách lên bậc N bằng tổng số cách lên bậc N-1 và N-2: Stairs(N) = Stairs(N-1) + Stairs(N-2).\n"
+                                          "  • Đây chính là sự tương đồng hoàn toàn với bài toán số Fibonacci về mặt cấu trúc quy hoạch động.\n", "explain")
+
+                txt_report.config(state="disabled")
+                ent_n.config(state="normal")
+                btn_run.config(state="normal")
+
             self.run_progress_simulation(
-                status_msg=f"Đang lập bảng quy hoạch động tính toán Fibonacci & Climbing Stairs với N={n}...",
-                finish_msg="Hoàn thành DP cơ bản.",
-                final_callback=show_result
+                status_msg=f"Đang chạy quy hoạch động Fibonacci & Climbing Stairs với N={n}...",
+                finish_msg="Hoàn thành thuật toán DP.",
+                final_callback=run_dp_algo
             )
-            
-        self.show_input_dialog("DP Cơ Bản (Fib & Stairs)", [
-            ("Tham số N:", "n", "10")
-        ], run_sim)
+
+        btn_run = tk.Button(left_frame, text="🚀 Chạy thuật toán DP", **btn_style_sub, command=execute_dp)
+        btn_run.pack(fill="x", pady=5)
 
     # --- 7. COMBO KNAPSACK ---
     def run_combo_knapsack(self):
         """Combo khuyến mãi cái túi 0/1"""
-        def run_sim(results):
-            b_str = results["b"]
-            try:
-                b = int(b_str)
-            except ValueError:
-                messagebox.showerror("Lỗi nhập liệu", "Ngân sách B phải là số nguyên!")
-                return
-            def show_result():
-                msg = f"Thuật toán Quy hoạch động cái túi (Knapsack 0/1) với ngân sách B={b} đã chạy thành công!"
-                self.log_message(msg, "success")
-                messagebox.showinfo("Combo Knapsack 0/1", msg)
-            self.run_progress_simulation(
-                status_msg=f"Đang thiết lập bảng quy hoạch động cái túi Knapsack với ngân sách B={b}...",
-                finish_msg="Hoàn thành tối ưu Knapsack.",
-                final_callback=show_result
-            )
-            
-        self.show_input_dialog("Combo Knapsack 0/1", [
-            ("Ngân sách tối đa B:", "b", "40")
-        ], run_sim)
+        # Dữ liệu mặc định ban đầu
+        self.knapsack_products = [
+            ("Sản phẩm A", 10, 60),
+            ("Sản phẩm B", 20, 100),
+            ("Sản phẩm C", 30, 120),
+            ("Sản phẩm D", 15, 70),
+            ("Sản phẩm E", 25, 90)
+        ]
 
+        # Tạo cửa sổ phụ
+        kb_win = tk.Toplevel(self.root)
+        kb_win.title("Combo Khuyến Mãi - Quy Hoạch Đường Knapsack 0/1")
+        kb_win.geometry("820x640")
+        kb_win.configure(bg="#f8fafc")
+        kb_win.transient(self.root)
+        kb_win.grab_set()
+
+        # Tiêu đề chính
+        lbl_title = tk.Label(
+            kb_win, 
+            text="HỆ THỐNG GỢI Ý COMBO TỐI ƯU (KNAPSACK 0/1)", 
+            font=("Segoe UI", 12, "bold"), 
+            fg="#f27024", 
+            bg="#f8fafc"
+        )
+        lbl_title.pack(pady=(15, 5))
+
+        # Split layout
+        content_frame = tk.Frame(kb_win, bg="#f8fafc")
+        content_frame.pack(fill="both", expand=True, padx=15, pady=5)
+
+        left_frame = tk.LabelFrame(content_frame, text=" Cấu hình sản phẩm & Ngân sách ", font=("Segoe UI", 9, "bold"), fg="#475569", bg="#ffffff", padx=15, pady=15)
+        left_frame.pack(side="left", fill="both", expand=True, padx=(0, 10))
+
+        right_frame = tk.LabelFrame(content_frame, text=" Kết quả phân tích tối ưu ", font=("Segoe UI", 9, "bold"), fg="#475569", bg="#ffffff", padx=10, pady=10)
+        right_frame.pack(side="right", fill="both", expand=True)
+
+        # Cột trái: Bảng Treeview hiển thị danh sách sản phẩm
+        lbl_p_list = tk.Label(left_frame, text="Danh sách sản phẩm hiện tại:", font=("Segoe UI", 9, "bold"), fg="#475569", bg="#ffffff")
+        lbl_p_list.pack(anchor="w", pady=(0, 4))
+
+        tree_frame = tk.Frame(left_frame, bg="#ffffff")
+        tree_frame.pack(fill="both", expand=True, pady=(0, 10))
+
+        tree = ttk.Treeview(tree_frame, columns=("name", "price", "score"), show="headings", height=6)
+        tree.heading("name", text="Tên sản phẩm")
+        tree.heading("price", text="Giá tiền")
+        tree.heading("score", text="Điểm ưu tiên")
+        
+        tree.column("name", width=120, anchor="w")
+        tree.column("price", width=80, anchor="center")
+        tree.column("score", width=80, anchor="center")
+        tree.pack(side="left", fill="both", expand=True)
+
+        scrollbar_tree = tk.Scrollbar(tree_frame, command=tree.yview)
+        scrollbar_tree.pack(side="right", fill="y")
+        tree.config(yscrollcommand=scrollbar_tree.set)
+
+        def refresh_tree():
+            for item in tree.get_children():
+                tree.delete(item)
+            for name, price, score in self.knapsack_products:
+                tree.insert("", tk.END, values=(name, price, score))
+
+        refresh_tree()
+
+        # Nút bấm nạp file sản phẩm
+        btn_style_sub = {
+            "bg": "#f27024",
+            "fg": "#ffffff",
+            "activebackground": "#d95f1c",
+            "activeforeground": "#ffffff",
+            "relief": "flat",
+            "font": ("Segoe UI", 9, "bold"),
+            "bd": 0,
+            "cursor": "hand2",
+            "pady": 5
+        }
+        btn_style_file = btn_style_sub.copy()
+        btn_style_file["bg"] = "#475569"
+        btn_style_file["activebackground"] = "#334155"
+
+        def load_products_file():
+            file_path = filedialog.askopenfilename(
+                title="Chọn tệp danh sách sản phẩm",
+                filetypes=[("CSV files", "*.csv"), ("Text files", "*.txt"), ("All files", "*.*")]
+            )
+            if file_path:
+                try:
+                    new_products = []
+                    with open(file_path, "r", encoding="utf-8") as f:
+                        for line in f:
+                            line = line.strip()
+                            if not line or line.startswith("#"):
+                                continue
+                            parts = line.split(",")
+                            if len(parts) >= 3:
+                                name = parts[0].strip()
+                                price = float(parts[1].strip())
+                                if price.is_integer():
+                                    price = int(price)
+                                score = float(parts[2].strip())
+                                if score.is_integer():
+                                    score = int(score)
+                                new_products.append((name, price, score))
+                    if new_products:
+                        self.knapsack_products = new_products
+                        refresh_tree()
+                        filename = os.path.basename(file_path)
+                        self.log_message(f"Đã nạp thành công {len(new_products)} sản phẩm từ {filename}.", "success")
+                    else:
+                        messagebox.showwarning("Cảnh báo", "Không tìm thấy sản phẩm hợp lệ trong file!")
+                except Exception as e:
+                    messagebox.showerror("Lỗi đọc file", f"Không thể đọc danh sách sản phẩm: {str(e)}")
+
+        btn_load_file = tk.Button(left_frame, text="📁 Nạp sản phẩm từ File (.csv)", **btn_style_file, command=load_products_file)
+        btn_load_file.pack(fill="x", pady=(0, 10))
+
+        # Nhập B
+        lbl_b = tk.Label(left_frame, text="Ngân sách tối đa B:", font=("Segoe UI", 9, "bold"), fg="#475569", bg="#ffffff")
+        lbl_b.pack(anchor="w", pady=(0, 2))
+        
+        ent_b = tk.Entry(left_frame, font=("Segoe UI", 10), relief="solid", bd=1)
+        ent_b.insert(0, "50")
+        ent_b.pack(fill="x", pady=(0, 12))
+
+        # Khung chứa 2 nút chạy thuật toán
+        btn_run_frame = tk.Frame(left_frame, bg="#ffffff")
+        btn_run_frame.pack(fill="x")
+
+        # Cột phải: Báo cáo kết quả
+        txt_report = tk.Text(right_frame, bg="#ffffff", fg="#0f172a", relief="flat", font=("Segoe UI", 10), wrap="word")
+        txt_report.pack(side="left", fill="both", expand=True)
+
+        scroll = tk.Scrollbar(right_frame, command=txt_report.yview)
+        scroll.pack(side="right", fill="y")
+        txt_report.config(yscrollcommand=scroll.set)
+
+        txt_report.tag_config("section", foreground="#f27024", font=("Segoe UI", 11, "bold"))
+        txt_report.tag_config("bold", font=("Segoe UI", 10, "bold"), foreground="#0f172a")
+        txt_report.tag_config("result", font=("Segoe UI", 10, "bold"), foreground="#10b981")
+        txt_report.tag_config("explain", font=("Segoe UI", 9, "italic"), foreground="#1e40af")
+
+        txt_report.insert(tk.END, "Vui lòng cấu hình tham số bên trái và chọn phương án tối ưu Knapsack...", "italic")
+        txt_report.config(state="disabled")
+
+        def execute_knapsack(version):
+            b_str = ent_b.get().strip()
+            try:
+                B = int(b_str)
+                if B < 0:
+                    raise ValueError("B không âm")
+            except ValueError:
+                messagebox.showerror("Lỗi nhập liệu", "Ngân sách tối đa B phải là số nguyên dương hợp lệ!")
+                return
+                
+            if not self.knapsack_products:
+                messagebox.showwarning("Cảnh báo", "Danh sách sản phẩm trống!")
+                return
+                
+            btn_load_file.config(state="disabled")
+            btn_run_2d.config(state="disabled")
+            btn_run_1d.config(state="disabled")
+            ent_b.config(state="disabled")
+
+            names = [item[0] for item in self.knapsack_products]
+            prices = [item[1] for item in self.knapsack_products]
+            scores = [item[2] for item in self.knapsack_products]
+            N = len(self.knapsack_products)
+
+            def run_algo():
+                txt_report.config(state="normal")
+                txt_report.delete("1.0", tk.END)
+
+                if version == "2d":
+                    dp = promo_optimizer.build_combo_dp_table(prices, scores, B)
+                    selected_indices = promo_optimizer.trace_combo_from_dp(dp, prices, scores, B)
+                    max_score = dp[-1][-1]
+                    
+                    self.log_message(f"Khuyến mãi Knapsack 2D: Tối ưu với điểm {max_score}", "success")
+
+                    txt_report.insert(tk.END, "🎁 KẾT QUẢ TỐI ƯU COMBO KHUYẾN MÃI (KNAPSACK 2D)\n", "section")
+                    txt_report.insert(tk.END, f"  - Ngân sách tối đa B: {B}\n")
+                    txt_report.insert(tk.END, f"  - Tổng số sản phẩm đưa vào tối ưu: {N}\n")
+                    txt_report.insert(tk.END, f"  - Điểm ưu tiên tối đa đạt được: ", "bold")
+                    txt_report.insert(tk.END, f"{max_score} điểm\n\n", "result")
+                    
+                    # Liệt kê sản phẩm chọn
+                    txt_report.insert(tk.END, "  - Danh sách sản phẩm được chọn vào Combo:\n", "bold")
+                    total_price = 0
+                    total_score = 0
+                    for idx in selected_indices:
+                        name, price, score = self.knapsack_products[idx]
+                        total_price += price
+                        total_score += score
+                        txt_report.insert(tk.END, f"    + {name} (Giá: {price}, Điểm: {score})\n")
+                    
+                    txt_report.insert(tk.END, f"\n  - Tổng chi phí thực tế: ", "bold")
+                    txt_report.insert(tk.END, f"{total_price}\n", "result")
+                    txt_report.insert(tk.END, f"  - Tổng điểm thực tế: ", "bold")
+                    txt_report.insert(tk.END, f"{total_score}\n\n", "result")
+
+                    # Vẽ bảng DP trực quan
+                    txt_report.insert(tk.END, "📊 TRỰC QUAN HÓA MA TRẬN PHƯƠNG ÁN DP 2D:\n", "section")
+                    txt_report.insert(tk.END, "  (Dòng: sản phẩm được chọn dần, Cột: các giới hạn ngân sách b từ 0 đến B)\n\n", "italic")
+                    
+                    if B <= 25:
+                        header_cols = "Item\\Budget | " + " | ".join(f"{b:2d}" for b in range(B + 1))
+                        txt_report.insert(tk.END, f"  {header_cols}\n")
+                        txt_report.insert(tk.END, "  " + "-" * len(header_cols) + "\n")
+                        
+                        for i in range(N + 1):
+                            row_name = "Khởi tạo" if i == 0 else names[i-1][:11]
+                            row_str = f"  {row_name:<11} | " + " | ".join(f"{dp[i][b]:2d}" for b in range(B + 1))
+                            txt_report.insert(tk.END, f"{row_str}\n")
+                    else:
+                        txt_report.insert(tk.END, f"  (Ma trận DP quá rộng vì B = {B} > 25. Để hiển thị đẹp mắt và không bị vỡ dòng, bảng chi tiết đã được lược bớt. Giá trị tối ưu tại DP[{N}][{B}] = {max_score}).\n", "italic")
+
+                else: # 1D version
+                    max_score, selected_indices = promo_optimizer.combo_knapsack_1d(prices, scores, B)
+                    self.log_message(f"Khuyến mãi Knapsack 1D: Tối ưu với điểm {max_score}", "success")
+
+                    txt_report.insert(tk.END, "⚡ KẾT QUẢ TỐI ƯU COMBO KHUYẾN MÃI (KNAPSACK 1D TỐI ƯU MEMORY)\n", "section")
+                    txt_report.insert(tk.END, f"  - Ngân sách tối đa B: {B}\n")
+                    txt_report.insert(tk.END, f"  - Tổng số sản phẩm đưa vào tối ưu: {N}\n")
+                    txt_report.insert(tk.END, f"  - Điểm ưu tiên tối đa đạt được: ", "bold")
+                    txt_report.insert(tk.END, f"{max_score} điểm\n\n", "result")
+                    
+                    # Liệt kê sản phẩm chọn
+                    txt_report.insert(tk.END, "  - Danh sách sản phẩm được chọn vào Combo:\n", "bold")
+                    total_price = 0
+                    total_score = 0
+                    for idx in selected_indices:
+                        name, price, score = self.knapsack_products[idx]
+                        total_price += price
+                        total_score += score
+                        txt_report.insert(tk.END, f"    + {name} (Giá: {price}, Điểm: {score})\n")
+                    
+                    txt_report.insert(tk.END, f"\n  - Tổng chi phí thực tế: ", "bold")
+                    txt_report.insert(tk.END, f"{total_price}\n", "result")
+                    txt_report.insert(tk.END, f"  - Tổng điểm thực tế: ", "bold")
+                    txt_report.insert(tk.END, f"{total_score}\n\n", "result")
+
+                    txt_report.insert(tk.END, "⚙️ ĐỐI CHIẾU VÀ SO SÁNH HIỆU NĂNG BỘ NHỚ:\n", "section")
+                    mem_2d = (N + 1) * (B + 1)
+                    mem_1d = B + 1
+                    saved_pct = (1 - mem_1d / mem_2d) * 100
+                    txt_report.insert(tk.END, f"  • Số lượng ô nhớ của mảng 2D: {mem_2d} ô\n")
+                    txt_report.insert(tk.END, f"  • Số lượng ô nhớ của mảng 1D: {mem_1d} ô\n")
+                    txt_report.insert(tk.END, f"  • Bộ nhớ tiết kiệm được: ", "bold")
+                    txt_report.insert(tk.END, f"{saved_pct:.1f}%\n\n", "result")
+                    
+                    txt_report.insert(tk.END, "💡 Giải thích giải thuật: Knapsack 1D duyệt ngân sách ngược chiều từ B giảm dần về price của sản phẩm hiện tại. Bằng cách này, ta có thể cập nhật trạng thái mới trực tiếp trên mảng 1D mà không làm ảnh hưởng đến các giá trị nhỏ hơn vốn thuộc về vòng lặp của sản phẩm trước đó (ngăn chặn việc chọn 1 sản phẩm nhiều lần). Độ phức tạp không gian giảm từ O(N * B) xuống chỉ còn O(B).\n", "explain")
+
+                txt_report.config(state="disabled")
+                btn_load_file.config(state="normal")
+                btn_run_2d.config(state="normal")
+                btn_run_1d.config(state="normal")
+                ent_b.config(state="normal")
+
+            self.run_progress_simulation(
+                status_msg=f"Đang tính toán combo tối ưu bằng Knapsack {version.upper()} với ngân sách B={B}...",
+                finish_msg="Tối ưu combo hoàn tất.",
+                final_callback=run_algo
+            )
+
+        btn_run_2d = tk.Button(btn_run_frame, text="🚀 Chạy Knapsack 2D", **btn_style_sub, command=lambda: execute_knapsack("2d"))
+        btn_run_2d.pack(side="left", fill="x", expand=True, padx=(0, 5))
+
+        btn_run_1d = tk.Button(btn_run_frame, text="🚀 Chạy Knapsack 1D", **btn_style_sub, command=lambda: execute_knapsack("1d"))
+        btn_run_1d.pack(side="right", fill="x", expand=True, padx=(5, 0))
 
     def input_data(self):
         """Chức năng 1: Nhập dữ liệu với xử lý lỗi và mô phỏng đọc file"""
