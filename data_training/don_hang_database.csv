@@ -1,10 +1,13 @@
 # Cơ sở dữ liệu đơn hàng POLY-SHIP
 # Định dạng: Mã_đơn_hàng,Thông_tin_giao_hàng
 HD303,Giao Sài Gòn - Nhanh
+Sản phẩm B,20,100
 HD999,Giao Cần Thơ - Nhanh
+Sản phẩm C,30,120
+Sản phẩm D,15,70
+Sản phẩm E,25,90
 HD777,Giao Quy Nhơn - Tiêu chuẩn
-HD101,Giao Hà Nội - Hỏa tốc 2h (CẬP NHẬT VIP)
-HD111,Giao Hà Nội - Tiết kiệm
+HD101,Giao Hà Nội - Hỏa tốc 2h
 HD102,Giao Hà Nội - Hỏa tốc 2h
 HD202,Giao Đà Nẵng - Tiết kiệm
 HD888,Giao Cần Thơ - Hỏa tốc
@@ -12,3 +15,4 @@ HD103,Giao Hà Nội - Hỏa tốc 2h
 HD121,Giao Thái Nguyên - Tiết kiệm
 HD104,Giao Hải Phòng - Tiêu chuẩn
 HD212,Giao Huế - Nhanh
+Sản phẩm A,10,60
